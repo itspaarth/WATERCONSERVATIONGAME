@@ -115,17 +115,42 @@
     #mgCursor { position: absolute; top: -5px; bottom: -5px; left: 0%; width: 8px; background: #ffea00; border-radius: 4px; box-shadow: 0 0 15px #ffea00; }
 
     #mobileControls { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 15; }
+    #mobileHUD { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: 0; transition: opacity 0.5s; }
+    #mobileHUD.show-mobile-hud { opacity: 1; }
     @media (max-width: 768px) {
         #mobileControls { display: block; }
-        #hud { display: none; } /* Hide desktop HUD on mobile */
+        #hud { display: none; }
+        #mobileHUD { display: flex; flex-direction: column; }
+        #mobileHUD.show-mobile-hud { pointer-events: auto; }
     }
-    .joystick-zone { position: absolute; bottom: 120px; left: 20px; width: 140px; height: 140px; background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: auto; }
-    .joystick-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.6); border-radius: 50%; }
+    .joystick-zone { position: absolute; bottom: 20%; left: 3%; width: clamp(100px, 18vw, 140px); height: clamp(100px, 18vw, 140px); background: rgba(255,255,255,0.15); border: 3px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: auto; }
+    .joystick-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: clamp(45px, 8vw, 60px); height: clamp(45px, 8vw, 60px); background: rgba(255,255,255,0.7); border-radius: 50%; transition: 0.05s all; }
     .touch-look-zone { position: absolute; inset: 0; pointer-events: auto; }
-    .action-btn { position: absolute; bottom: 120px; right: 20px; width: 70px; height: 70px; background: rgba(244, 143, 177, 0.6); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 24px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .action-btn:active { background: rgba(244, 143, 177, 0.9); transform: scale(0.95); }
-    .jump-btn { position: absolute; bottom: 200px; right: 20px; width: 60px; height: 60px; background: rgba(128, 222, 234, 0.6); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; }
-    .jump-btn:active { background: rgba(128, 222, 234, 0.9); transform: scale(0.95); }
+    .look-indicator { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); background: rgba(0, 229, 255, 0.8); color: white; padding: 8px 16px; border-radius: 20px; font-family: 'Fredoka One'; font-size: clamp(12px, 2.5vw, 16px); opacity: 0; transition: opacity 0.3s; pointer-events: none; border: 2px solid rgba(255,255,255,0.6); }
+    .look-indicator.active { opacity: 1; }
+    .action-btn { position: absolute; bottom: clamp(140px, 25vh, 180px); right: 3%; width: clamp(60px, 14vw, 80px); height: clamp(60px, 14vw, 80px); background: rgba(244, 143, 177, 0.65); border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: clamp(24px, 5vw, 32px); color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: 0.1s all; }
+    .action-btn:active { background: rgba(244, 143, 177, 0.95); transform: scale(0.92); }
+    .jump-btn { position: absolute; bottom: clamp(220px, 38vh, 260px); right: 3%; width: clamp(55px, 12vw, 70px); height: clamp(55px, 12vw, 70px); background: rgba(128, 222, 234, 0.65); border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: clamp(18px, 4vw, 24px); color: white; transition: 0.1s all; }
+    .jump-btn:active { background: rgba(128, 222, 234, 0.95); transform: scale(0.92); }
+    
+    /* Mobile HUD Styles */
+    #mobileStats { position: absolute; top: clamp(10px, 3vw, 20px); left: clamp(10px, 3vw, 20px); padding: clamp(10px, 2vw, 15px); background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.6); border-radius: 15px; color: #fff; font-size: clamp(11px, 2.5vw, 14px); font-weight: 900; text-shadow: none; min-width: 120px; }
+    #mobileStats .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px dashed rgba(255,255,255,0.3); }
+    #mobileStats .stat-icon { font-size: clamp(14px, 3vw, 18px); margin-right: 5px; }
+    #mobileStats .stat-val { color: #80deea; font-family: 'Fredoka One'; }
+    
+    #mobileJournal { position: absolute; top: clamp(10px, 3vw, 20px); right: clamp(10px, 3vw, 20px); padding: clamp(10px, 2vw, 15px); background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.6); border-radius: 15px; color: #fff; text-align: right; font-size: clamp(11px, 2.5vw, 13px); font-weight: 900; text-shadow: none; max-width: 45vw; }
+    #mobileJournal #questTitle { color: #f48fb1; font-family: 'Fredoka One'; font-size: clamp(12px, 2.8vw, 15px); margin-bottom: 3px; }
+    #mobileJournal #questText { font-size: clamp(11px, 2.5vw, 13px); line-height: 1.3; }
+    
+    #mobileEnvDisplay { position: absolute; top: clamp(10px, 3vw, 20px); left: 50%; transform: translateX(-50%); padding: clamp(8px, 1.5vw, 12px) clamp(15px, 2.5vw, 20px); background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.6); border-radius: 20px; color: #fff; font-family: 'Fredoka One'; font-size: clamp(12px, 2.5vw, 15px); text-shadow: none; display: flex; gap: 8px; white-space: nowrap; }
+    
+    #mobileHotbar { position: absolute; bottom: clamp(10px, 3vw, 20px); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: clamp(8px, 1.5vw, 12px); background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.6); border-radius: 20px; max-width: 90vw; overflow-x: auto; -webkit-overflow-scrolling: touch; pointer-events: auto; }
+    #mobileHotbar .slot { width: clamp(40px, 9vw, 55px); height: clamp(40px, 9vw, 55px); flex-shrink: 0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: clamp(18px, 4vw, 24px); background: rgba(255,255,255,0.9); border: 2px solid transparent; color: #333; transition: 0.2s all; cursor: pointer; position: relative; box-shadow: 0 3px 8px rgba(0,0,0,0.3); text-shadow: none; }
+    #mobileHotbar .slot span { font-size: clamp(8px, 1.8vw, 10px); font-weight: 900; color: #7e57c2; margin-top: -2px; font-family: 'Fredoka One'; }
+    #mobileHotbar .slot.active { border-color: #f48fb1; background: #fff; transform: scale(1.1); box-shadow: 0 0 15px rgba(244, 143, 177, 0.8); filter: drop-shadow(0 0 10px rgba(244, 143, 177, 0.6)); animation: glowPulse 2s ease-in-out infinite alternate; }
+    #mobileHotbar .slot.locked { opacity: 0.5; background: #e0e0e0; }
+    #mobileHotbar .slot.locked::after { content: "🔒"; position: absolute; font-size: clamp(14px, 3vw, 18px); top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
     .floating-text { position: fixed; pointer-events: none; font-family: 'Fredoka One'; font-size: clamp(20px, 5vw, 32px); color: white; text-shadow: 2px 4px 0px rgba(0,0,0,0.4); z-index: 100; animation: floatUp 2s forwards ease-in; text-align: center; width: 400px; margin-left: -200px; }
     @keyframes floatUp { 0% { opacity: 0; transform: translateY(10px) scale(0.5); } 15% { opacity: 1; transform: translateY(0) scale(1.2); } 100% { opacity: 0; transform: translateY(-100px) scale(1); } }
@@ -156,9 +181,33 @@
 <!-- Mobile Controls -->
 <div id="mobileControls">
     <div class="touch-look-zone" id="touchLookZone"></div>
+    <div class="look-indicator" id="lookIndicator">👀 LOOK</div>
     <div class="joystick-zone" id="joystickZone"><div class="joystick-knob" id="joystickKnob"></div></div>
     <div class="action-btn" id="btnInteract">✨</div>
     <div class="jump-btn" id="btnJump">⏫</div>
+</div>
+
+<!-- Mobile HUD -->
+<div id="mobileHUD">
+    <div id="mobileStats">
+        <div class="stat-row"><span><span class="stat-icon">🌟</span>L<span id="mlevel">1</span></span> <span class="stat-val" id="mxpText" style="font-size:11px;">0/100</span></div>
+        <div class="stat-row"><span><span class="stat-icon">🪙</span>C</span> <span class="stat-val" id="mcoinCount">0</span></div>
+        <div class="stat-row"><span><span class="stat-icon">⭐</span>H</span> <span class="stat-val" id="mharvestCount">0</span></div>
+        <div class="stat-row"><span><span class="stat-icon">💧</span>W</span> <span class="stat-val" id="mwaterCount">0</span></div>
+    </div>
+    
+    <div id="mobileEnvDisplay">
+        <span id="mtimeDisplay">12:00 PM</span><span style="opacity: 0.6;">|</span><span id="mweatherDisplay">☀️</span>
+    </div>
+    
+    <div id="mobileJournal">
+        <span id="mquestTitle">Heritage</span>
+        <div id="mquestText" style="font-size: clamp(10px, 2.2vw, 12px);">Find relics!</div>
+    </div>
+    
+    <div id="mobileHotbar">
+        <!-- Hotbar slots will be dynamically added -->
+    </div>
 </div>
 
 <div id="intro" class="modal-backdrop">
@@ -308,13 +357,18 @@
     if (window.hasTouch) {
         document.getElementById('mobileControls').style.display = 'block';
         document.getElementById('cross').style.display = 'none';
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobileHUD').classList.add('show-mobile-hud');
         
         // Touch Look
-        let touchLookStartX = 0, touchLookStartY = 0;
+        let touchLookStartX = 0, touchLookStartY = 0, isLooking = false;
+        const lookIndicator = document.getElementById('lookIndicator');
         document.getElementById('touchLookZone').addEventListener('touchstart', e => {
             if(e.touches.length === 1) {
+                isLooking = true;
                 touchLookStartX = e.touches[0].clientX;
                 touchLookStartY = e.touches[0].clientY;
+                if(lookIndicator) lookIndicator.classList.add('active');
             }
         });
         document.getElementById('touchLookZone').addEventListener('touchmove', e => {
@@ -328,6 +382,10 @@
                 touchLookStartX = e.touches[0].clientX;
                 touchLookStartY = e.touches[0].clientY;
             }
+        });
+        document.getElementById('touchLookZone').addEventListener('touchend', () => {
+            isLooking = false;
+            if(lookIndicator) lookIndicator.classList.remove('active');
         });
         
         // Joystick
@@ -535,7 +593,10 @@ let narratorTimer = null;
 
 function wakeHUD() {
     const hud = document.getElementById('hud');
-    if(hud) { hud.classList.add('show-hud'); hudVisibilityTimer = 180; }
+    if(hud) { hud.classList.add('show-hud'); }
+    const mobileHud = document.getElementById('mobileHUD');
+    if(mobileHud) { mobileHud.classList.add('show-mobile-hud'); }
+    hudVisibilityTimer = 180;
 }
 
 function triggerNarrator(text, duration=5000) {
@@ -968,6 +1029,13 @@ window.updateUI = () => {
             if(state.toolsUnlocked[i]) el.classList.remove('locked');
             el.classList.toggle('active', i === state.tool);
         }
+        
+        // Update mobile hotbar
+        const mobileSlots = document.getElementById('mobileHotbar').querySelectorAll('.slot');
+        if(mobileSlots[i]) {
+            if(state.toolsUnlocked[i]) mobileSlots[i].classList.remove('locked');
+            mobileSlots[i].classList.toggle('active', i === state.tool);
+        }
     }
     
     setSafeText('badge-seeds', state.seeds[state.currentSeedType]);
@@ -1012,6 +1080,19 @@ window.updateUI = () => {
         }
     } else {
         setSafeText('questTitle', currentQuest.title); setSafeText('questText', currentQuest.text); setSafeText('eduFact', `Tip: ${currentQuest.tip}`);
+    }
+    
+    // Update Mobile HUD
+    setSafeText('mcoinCount', state.coins);
+    setSafeText('mlevel', state.level);
+    setSafeText('mxpText', state.level >= MAX_LEVEL ? 'M' : `${Math.floor(state.xp)}/${state.level*100}`.substring(0,6));
+    setSafeText('mharvestCount', state.harvested);
+    setSafeText('mwaterCount', Math.floor(state.waterSupply));
+    
+    let mobileQuest = QUESTS[state.questStep];
+    if(mobileQuest) {
+        setSafeText('mquestTitle', mobileQuest.title.substring(0, 10));
+        setSafeText('mquestText', mobileQuest.text.substring(0, 25));
     }
 };
 
@@ -1241,7 +1322,22 @@ const clock = new THREE.Clock(); let yaw = 0, pitch = 0; let currentSpeed = 0, v
 window.startGame = () => { 
     state.paused = false; 
     document.getElementById('intro').style.display = 'none'; 
-    document.getElementById('hud').style.display = 'block'; 
+    document.getElementById('hud').style.display = 'block';
+    document.getElementById('mobileHUD').classList.add('show-mobile-hud');
+    
+    // Create mobile hotbar slots
+    const mobileHotbar = document.getElementById('mobileHotbar');
+    if(mobileHotbar && mobileHotbar.children.length === 0) {
+        const tools = ['🪄', '✨', '🧪', '🌙', '🕸️', '🧚', '💎', '🎣', '🌿'];
+        tools.forEach((emoji, i) => {
+            const slot = document.createElement('div');
+            slot.className = 'slot locked';
+            slot.innerHTML = emoji + '<span>T' + (i+1) + '</span>';
+            slot.onclick = () => window.setTool(i);
+            mobileHotbar.appendChild(slot);
+        });
+    }
+    
     initAudio(); 
     if(!window.isMobile && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock(); 
     playSound('success'); window.updateUI(); 
@@ -1373,9 +1469,14 @@ function animate() {
         }
         
         const hudEl = document.getElementById('hud');
+        const mobileHudEl = document.getElementById('mobileHUD');
         if(hudEl) {
             if(hudVisibilityTimer <= 0) hudEl.classList.remove('show-hud');
             else hudEl.classList.add('show-hud');
+        }
+        if(mobileHudEl) {
+            if(hudVisibilityTimer <= 0) mobileHudEl.classList.remove('show-mobile-hud');
+            else mobileHudEl.classList.add('show-mobile-hud');
         }
 
         if(state.ticks % 30 === 0) updateChunks();
@@ -1400,7 +1501,9 @@ function animate() {
     
     scene.background.lerp(skyColor, 0.05); scene.fog.color.lerp(fogColor, 0.05); 
     const timeEl = document.getElementById('timeDisplay'); const weatherEl = document.getElementById('weatherDisplay');
+    const mTimeEl = document.getElementById('mtimeDisplay'); const mWeatherEl = document.getElementById('mweatherDisplay');
     if (timeEl) timeEl.textContent = displayTime; if (weatherEl) weatherEl.textContent = displayWeather;
+    if (mTimeEl) mTimeEl.textContent = displayTime.split(' ')[0]; if (mWeatherEl) mWeatherEl.textContent = displayWeather.split(' ')[0];
     
     magicWaterMap.offset.x += 0.002; magicWaterMap.offset.y += 0.002;
 
