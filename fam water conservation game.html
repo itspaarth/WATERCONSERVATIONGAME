@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0">
+<title>Starlight Valley: Ultimate Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #f48fb1; --water: #80deea; --accent: #fff59d; --text: #4a148c;
+        --bg: rgba(255, 255, 255, 0.3); --glass: rgba(255, 255, 255, 0.25);
+        --border: rgba(255, 255, 255, 0.6);
+    }
+    
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: 'Nunito', sans-serif; background: #000; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+    canvas { display: block; touch-action: none; outline: none; }
+
+    #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, transparent 40%, rgba(106, 27, 154, 0.4) 150%); z-index: 10; }
+
+    #loading { position: fixed; inset: 0; background: #f3e5f5; color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-size: 24px; font-family: 'Fredoka One'; transition: opacity 0.8s; text-align: center; padding: 20px;}
+    .spinner { width: 50px; height: 50px; border: 6px solid rgba(244, 143, 177, 0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite; margin-bottom: 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .modal-backdrop {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(circle at center, rgba(243, 229, 245, 0.7) 0%, rgba(126, 87, 194, 0.9) 100%);
+        backdrop-filter: blur(25px) saturate(150%); z-index: 50; transition: opacity 0.4s;
+    }
+    #menu, #intro, #victory, #achievementModal { display: none; }
+
+    .game-panel {
+        width: 800px; max-width: 90vw; padding: 30px; border-radius: 35px;
+        background: var(--bg); color: var(--text); text-align: center;
+        box-shadow: 0 16px 40px rgba(31, 38, 135, 0.2), inset 0 0 0 2px var(--border);
+        border: 1px solid rgba(255,255,255,0.8); max-height: 85vh; overflow-y: auto;
+    }
+
+    .game-panel h1 { font-family: 'Fredoka One', cursive; color: #ec407a; font-size: clamp(2.5rem, 8vw, 4.5rem); margin: 0 0 10px 0; text-shadow: 3px 3px 0px #f8bbd0; line-height: 1.1; letter-spacing: -1px; }
+    .game-panel h1 span { color: #26c6da; text-shadow: 3px 3px 0 #b2ebf2; }
+    .game-panel h2 { font-family: 'Fredoka One', cursive; font-weight: 900; color: #ab47bc; font-size: clamp(1.2rem, 4vw, 1.6rem); margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }
+    .game-panel p { font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.5; color: #4a148c; font-weight: 700; margin: 10px 0; }
+
+    button.btn-game {
+        padding: 15px 40px; border: none; border-radius: 30px;
+        background: linear-gradient(135deg, #f06292, #d81b60); color: white;
+        font-weight: 900; cursor: pointer; font-size: clamp(1.2rem, 4vw, 1.5rem); font-family: 'Fredoka One';
+        box-shadow: 0 6px 0 #880e4f, 0 10px 20px rgba(233, 30, 99, 0.4); transition: 0.1s all;
+        margin-top: 15px; width: 100%; max-width: 300px;
+    }
+    button.btn-game:active { transform: translateY(6px); box-shadow: 0 0px 0 #880e4f; }
+
+    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: 0; transition: opacity 0.5s ease-in-out; }
+    #hud.show-hud { opacity: 1; }
+    #hud.show-hud #hotbar { pointer-events: auto; }
+
+    .glass-ui { background: var(--glass); backdrop-filter: blur(20px) saturate(150%); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 8px 25px rgba(31, 38, 135, 0.15); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+
+    #stats { position: absolute; top: 15px; left: 15px; padding: 15px; min-width: 200px; max-width: 40vw; font-size: 14px; font-weight: 900; color: #4a148c; text-shadow: none; background: rgba(255,255,255,0.7); }
+    .stat-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 2px dashed rgba(126, 87, 194, 0.2); padding-bottom: 4px; }
+    .stat-val { font-size: 18px; font-family: 'Fredoka One'; color: #c2185b; }
+    .stat-icon { font-size: 18px; margin-right: 8px; width: 20px; text-align: center; display: inline-block; }
+    
+    .bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.5); border-radius: 8px; overflow: hidden; margin-top: 5px; border: 2px solid #fff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+    #xpFill { height: 100%; width: 0%; background: linear-gradient(90deg, #fff59d, #fbc02d); transition: width 0.4s; }
+    #waterFill { height: 100%; width: 100%; background: linear-gradient(90deg, #80deea, #00bcd4); transition: width 0.4s; }
+
+    #journal { position: absolute; top: 15px; right: 15px; padding: 15px; width: 280px; max-width: 45vw; text-align: right; color: #4a148c; text-shadow: none; background: rgba(255,255,255,0.7); }
+    #questTitle { color: #d81b60; font-size: 1.1rem; font-family: 'Fredoka One'; margin-bottom: 5px; display: block; text-transform: uppercase; }
+    #questText { font-weight: 900; font-size: 1rem; line-height: 1.3; }
+    
+    #envDisplay { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); padding: 8px 20px; font-size: 16px; font-family: 'Fredoka One'; color: #c2185b; border-radius: 30px; display: flex; gap: 10px; border: 3px solid #fff; background: rgba(255,255,255,0.8); text-shadow: none; white-space: nowrap; }
+
+    #hotbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: none; padding: 10px; border-radius: 25px; background: rgba(255,255,255,0.5); border: 2px solid #fff; max-width: 95vw; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .slot { width: clamp(45px, 12vw, 60px); height: clamp(45px, 12vw, 60px); flex-shrink: 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: clamp(20px, 5vw, 28px); background: rgba(255,255,255,0.95); border: 3px solid transparent; color: #333; transition: 0.2s; cursor: pointer; position: relative; box-shadow: 0 4px 10px rgba(31, 38, 135, 0.15); text-shadow: none; }
+    .slot span { font-size: clamp(8px, 2vw, 10px); font-weight: 900; color: #7e57c2; margin-top: -2px; font-family: 'Fredoka One'; }
+    .slot.active { border-color: #f48fb1; background: #fff; transform: translateY(-8px) scale(1.1); box-shadow: 0 10px 15px rgba(244, 143, 177, 0.5), 0 0 15px rgba(255, 255, 255, 1); }
+    .slot.locked { opacity: 0.5; background: #e0e0e0; pointer-events: none; }
+    .slot.locked::after { content: "🔒"; position: absolute; font-size: 20px; top: 50%; left: 50%; transform: translate(-50%, -50%); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .slot .badge { position: absolute; top: -6px; right: -6px; background: #ab47bc; color: white; font-size: 10px; padding: 2px 5px; border-radius: 10px; font-family: 'Fredoka One'; box-shadow: 0 2px 5px rgba(0,0,0,0.2); border: 2px solid #fff; }
+
+    #cross { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 12px #f48fb1; z-index: 25; transition: 0.2s; }
+    #cross.active { transform: translate(-50%, -50%) scale(2.5); background: transparent; border: 3px solid #00e5ff; box-shadow: 0 0 15px rgba(0, 229, 255, 0.6); }
+
+    #narratorBox { position: fixed; top: -150px; left: 50%; transform: translateX(-50%); background: rgba(74, 20, 140, 0.95); border: 3px solid #00e5ff; border-radius: 40px; padding: 15px 35px; color: #fff; font-family: 'Fredoka One'; font-size: clamp(16px, 4vw, 24px); box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(0, 229, 255, 0.4); z-index: 150; transition: top 0.6s cubic-bezier(0.4, 0, 0.2, 1.5); display: flex; align-items: center; gap: 20px; pointer-events: none; text-shadow: 1px 2px 0px rgba(0,0,0,0.5); max-width: 90vw; text-align: left; }
+    #narratorBox.show { top: 30px; }
+    .narrator-avatar { font-size: clamp(35px, 8vw, 50px); filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
+
+    #minigameContainer { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 80; display: none; align-items: center; justify-content: center; flex-direction: column; pointer-events: auto; }
+    #mgTitle { font-family: 'Fredoka One'; color: #ffea00; font-size: 2rem; margin-bottom: 20px; text-shadow: 0 4px 8px rgba(0,0,0,0.8); text-transform: uppercase;}
+    #mgBar { width: 80vw; max-width: 400px; height: 40px; background: #333; border: 4px solid #fff; border-radius: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    #mgTarget { position: absolute; top: 0; bottom: 0; left: 40%; width: 20%; background: rgba(0, 229, 255, 0.5); border-left: 2px solid #00e5ff; border-right: 2px solid #00e5ff; }
+    #mgCursor { position: absolute; top: -5px; bottom: -5px; left: 0%; width: 8px; background: #ffea00; border-radius: 4px; box-shadow: 0 0 15px #ffea00; }
+
+    #mobileControls { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 15; }
+    .joystick-zone { position: absolute; bottom: 120px; left: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: auto; }
+    .joystick-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: rgba(255,255,255,0.6); border-radius: 50%; }
+    .touch-look-zone { position: absolute; inset: 0; pointer-events: auto; }
+    .action-btn { position: absolute; bottom: 120px; right: 20px; width: 70px; height: 70px; background: rgba(244, 143, 177, 0.6); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 24px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .action-btn:active { background: rgba(244, 143, 177, 0.9); transform: scale(0.95); }
+    .jump-btn { position: absolute; bottom: 200px; right: 20px; width: 60px; height: 60px; background: rgba(128, 222, 234, 0.6); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; }
+    .jump-btn:active { background: rgba(128, 222, 234, 0.9); transform: scale(0.95); }
+
+    .floating-text { position: fixed; pointer-events: none; font-family: 'Fredoka One'; font-size: clamp(20px, 5vw, 32px); color: white; text-shadow: 2px 4px 0px rgba(0,0,0,0.4); z-index: 100; animation: floatUp 2s forwards ease-in; text-align: center; width: 400px; margin-left: -200px; }
+    @keyframes floatUp { 0% { opacity: 0; transform: translateY(10px) scale(0.5); } 15% { opacity: 1; transform: translateY(0) scale(1.2); } 100% { opacity: 0; transform: translateY(-100px) scale(1); } }
+    
+    #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 99; transition: opacity 0.3s; }
+    .swinging { animation: swing 0.3s ease-in-out; }
+    @keyframes swing { 0% { transform: rotate(0deg); } 40% { transform: rotate(55deg) translateY(15px); } 100% { transform: rotate(0deg); } }
+
+    #toolInfo { position: absolute; bottom: 105px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 30px; font-family: 'Nunito', sans-serif; font-size: clamp(14px, 3vw, 18px); font-weight: 900; opacity: 0; transition: opacity 0.3s; pointer-events: none; text-align: center; border: 2px solid rgba(255,255,255,0.4); width: max-content; max-width: 90vw; text-shadow: none; z-index: 10; }
+    #actionTooltip { position: fixed; top: 55%; left: 50%; transform: translateX(-50%); font-family: 'Fredoka One'; color: #4a148c; text-shadow: 0 2px 0px #fff; font-size: 26px; pointer-events: none; opacity: 0; transition: 0.2s; text-align: center; background: rgba(255,255,255,0.7); padding: 8px 25px; border-radius: 20px; border: 2px solid #fff; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+    <div class="spinner"></div>
+    <div id="loadText">Painting the Pastel Realm...</div>
+</div>
+
+<div id="vignette"></div>
+
+<!-- Mobile Controls -->
+<div id="mobileControls">
+    <div class="touch-look-zone" id="touchLookZone"></div>
+    <div class="joystick-zone" id="joystickZone"><div class="joystick-knob" id="joystickKnob"></div></div>
+    <div class="action-btn" id="btnInteract">✨</div>
+    <div class="jump-btn" id="btnJump">⏫</div>
+</div>
+
+<div id="intro" class="modal-backdrop">
+    <div class="game-panel panel">
+        <h1>Starlight <span>Valley</span></h1>
+        <h2>Conservation Masterclass</h2>
+        <p>Immerse yourself in magic. Let the Narrator guide you to master water conservation.</p>
+        <div style="display:flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; text-align: left; font-size: 0.9rem;">
+            <div style="flex: 1; min-width: 140px;">
+                <p>🚀 <b>Move:</b> WASD / Joystick</p>
+                <p>🌟 <b>Crops:</b> Cycle Seeds with [2]</p>
+                <p>💧 <b>Drips & Moss:</b> Save water!</p>
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+                <p>🧚 <b>Market:</b> Trade resources.</p>
+                <p>🚰 <b>Jal Kund:</b> Catch Rainwater.</p>
+                <p>🏆 <b>Quests:</b> Listen to the Mage!</p>
+            </div>
+        </div>
+        <button class="btn-game btn-primary" onclick="window.startGame()">Awaken</button>
+    </div>
+</div>
+
+<div id="menu" class="modal-backdrop">
+    <div class="game-panel panel">
+        <h1>Time Frozen</h1>
+        <p>Breathe in the magical breeze...</p>
+        <button class="btn-game btn-primary" onclick="window.resumeGame()">Resume Life</button>
+    </div>
+</div>
+
+<div id="victory" class="modal-backdrop">
+    <div class="game-panel panel">
+        <h1 style="font-size: clamp(3rem, 10vw, 5rem);">Arch <span>Mage!</span></h1>
+        <p>You have completed the Conservation Masterclass! The fairy folk sing your praises eternally!</p>
+        <button class="btn-game btn-primary" onclick="location.reload()">Cast Rebirth</button>
+    </div>
+</div>
+
+<div id="achievementModal" class="modal-backdrop" style="z-index: 90;">
+    <div class="game-panel panel" style="background: rgba(255,255,255,0.95); border: 4px solid #f48fb1;">
+        <h1 id="achTitle" style="font-size: 3rem; margin-bottom: 0; text-shadow: none; color: #d81b60;">Relic Found!</h1>
+        <h2 id="achSub" style="color: #ab47bc; margin-top: 10px; font-size: 2rem;">The Star Wand</h2>
+        <div style="background: rgba(126, 87, 194, 0.1); padding: 20px; border-radius: 20px; margin: 20px 0; border: 2px dashed #ce93d8;">
+            <p style="margin: 0 0 10px 0; font-family: 'Fredoka One'; color: #4a148c; font-size: 1.2rem;">✨ HOW TO USE ✨</p>
+            <p id="achDesc" style="font-size: 1.4rem; margin: 0; color: #333;">You can now till the earth and dig up artifacts!</p>
+        </div>
+        <button class="btn-game btn-primary" onclick="window.closeAchievement()">Awesome!</button>
+    </div>
+</div>
+
+<div id="narratorBox">
+    <div class="narrator-avatar">🧙‍♂️</div>
+    <div id="narratorText">Welcome to Starlight Valley!</div>
+</div>
+
+<div id="minigameContainer">
+    <div id="mgTitle">Break the Seal!</div>
+    <div id="mgBar">
+        <div id="mgTarget"></div>
+        <div id="mgCursor"></div>
+    </div>
+    <button class="btn-game btn-primary" id="mgBtn" style="font-size: 1.5rem; width: 250px;">TAP TO UNLOCK</button>
+</div>
+
+<div id="hud">
+    <div id="stats" class="glass-ui">
+        <div class="stat-row"><span><span class="stat-icon">🌟</span>Lvl <span id="levelCount">1</span></span> <span class="stat-val" id="xpText" style="font-size:16px;">0/100</span></div>
+        <div class="bar-bg"><div id="xpFill"></div></div>
+        <div style="height: 10px;"></div>
+        <div class="stat-row"><span><span class="stat-icon">🪙</span>Coins</span> <span class="stat-val" id="coinCount" style="color:#d81b60">0</span></div>
+        <div class="stat-row"><span><span class="stat-icon">⭐</span>Crops</span> <span class="stat-val" id="harvestCount">0</span></div>
+        <div class="stat-row"><span><span class="stat-icon">🐟</span>Fish</span> <span class="stat-val" id="fishCount">0</span></div>
+        <div class="stat-row"><span><span class="stat-icon">🦋</span>Bugs</span> <span class="stat-val" id="bugCount">0</span></div>
+        <div style="height: 5px;"></div>
+        <div style="font-size: 11px; font-family: 'Fredoka One'; color: #00bcd4; margin-bottom: 2px;">MAGIC SUPPLY</div>
+        <div class="bar-bg" style="height: 12px;"><div id="waterFill"></div></div>
+    </div>
+
+    <div id="envDisplay" class="glass-ui">
+        <span id="timeDisplay">12:00 PM</span><span style="opacity: 0.5;">|</span><span id="weatherDisplay">☀️ Dawn</span>
+    </div>
+
+    <div id="journal" class="glass-ui">
+        <span id="questTitle">The Heritage</span>
+        <span id="questText">Find your grandfather's 9 relics!</span>
+        <div id="eduFact" style="font-size: 12px; color: #8e24aa; margin-top: 10px;">Tip: Listen to the Wizard. Tools glow brightly!</div>
+    </div>
+
+    <div id="hotbar" class="glass-ui">
+        <div class="slot locked" id="slot-0" onclick="window.setTool(0)">🪄<span id="label-wand">Wand</span></div>
+        <div class="slot locked" id="slot-1" onclick="window.setTool(1)">✨<span id="label-seed">Star</span><div id="badge-seeds" class="badge" style="display:none;">0</div></div>
+        <div class="slot locked" id="slot-2" onclick="window.setTool(2)">🧪<span id="label-flask">Flask</span></div>
+        <div class="slot locked" id="slot-3" onclick="window.setTool(3)">🌙<span id="label-blade">Blade</span></div>
+        <div class="slot locked" id="slot-4" onclick="window.setTool(4)">🕸️<span id="label-net">Net</span><div id="badge-trash" class="badge" style="display:none; background:#7e57c2;">0</div></div>
+        <div class="slot locked" id="slot-5" onclick="window.setTool(5)">🧚<span id="label-dust">Dust</span><div id="badge-fert" class="badge" style="display:none;">0</div></div>
+        <div class="slot locked" id="slot-6" onclick="window.setTool(6)">💎<span id="label-crystal">Crystal</span><div id="badge-drip" class="badge" style="display:none; background:#00bcd4;">0</div></div>
+        <div class="slot locked" id="slot-7" onclick="window.setTool(7)">🎣<span id="label-rod">Rod</span></div>
+        <div class="slot locked" id="slot-8" onclick="window.setTool(8)">🌿<span id="label-moss">Moss</span><div id="badge-moss" class="badge" style="display:none; background:#69f0ae;">0</div></div>
+    </div>
+    
+    <div id="toolInfo">Equip a tool!</div>
+</div>
+
+<div id="cross"></div>
+<div id="actionTooltip">Interact</div>
+<div id="flash"></div>
+
+<!-- Global Variables & Helpers Script -->
+<script>
+    window.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+    window.mobileMoveX = 0;
+    window.mobileMoveZ = 0;
+    
+    if (window.isMobile) {
+        document.getElementById('mobileControls').style.display = 'block';
+        document.getElementById('cross').style.display = 'none';
+    }
+</script>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+// Procedural Maps (Low resolution for performance)
+function createNoiseTexture(size, scale, intensity, r=255, g=255, b=255, a=255) {
+    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d'); const imgData = ctx.createImageData(size, size); const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const x = (i / 4) % size; const y = Math.floor((i / 4) / size);
+        let val = (Math.sin(x * scale) + Math.cos(y * scale) + Math.random() * intensity) * 128;
+        val = Math.max(0, Math.min(255, val + 100)); 
+        data[i] = (val/255)*r; data[i+1] = (val/255)*g; data[i+2] = (val/255)*b; data[i+3] = a;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const tex = new THREE.CanvasTexture(canvas); tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; return tex;
+}
+function createMushroomTexture(baseColorHex) {
+    const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; 
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = baseColorHex; ctx.fillRect(0,0,64,64);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for(let i=0; i<10; i++) { ctx.beginPath(); ctx.arc(Math.random()*64, Math.random()*64, 4+Math.random()*8, 0, Math.PI*2); ctx.fill(); }
+    return new THREE.CanvasTexture(canvas);
+}
+function createFaceTexture(skinColor) {
+    const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = skinColor; ctx.fillRect(0, 0, 64, 64);
+    ctx.fillStyle = '#4a148c'; ctx.fillRect(16, 26, 6, 8); ctx.fillRect(42, 26, 6, 8); 
+    ctx.fillStyle = 'rgba(240, 98, 146, 0.6)'; ctx.fillRect(10, 38, 12, 6); ctx.fillRect(42, 38, 12, 6); 
+    ctx.fillStyle = '#880e4f'; ctx.fillRect(26, 46, 12, 4); 
+    return new THREE.CanvasTexture(canvas);
+}
+
+const bumpMapSoil = createNoiseTexture(64, 0.1, 1.5);
+const bumpMapBrick = createNoiseTexture(64, 0.5, 1.0);
+const magicWaterMap = createNoiseTexture(64, 0.05, 1.5, 128, 222, 234, 200); 
+const texWood = createNoiseTexture(64, 0.2, 0.5, 206, 147, 216); 
+const faceMap1 = createFaceTexture('#ffe0b2');
+const faceMap2 = createFaceTexture('#ffccbc');
+
+// Audio System
+const ac = new (window.AudioContext || window.webkitAudioContext)();
+let windGain, windFilter;
+
+function initAudio() {
+    if(ac.state === 'suspended') ac.resume();
+    const bufferSize = 2 * ac.sampleRate; const noiseBuffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+    const output = noiseBuffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+    const noise = ac.createBufferSource(); noise.buffer = noiseBuffer; noise.loop = true;
+    windFilter = ac.createBiquadFilter(); windFilter.type = 'lowpass'; windFilter.frequency.value = 500; 
+    windGain = ac.createGain(); windGain.gain.value = 0.015;
+    noise.connect(windFilter); windFilter.connect(windGain); windGain.connect(ac.destination); noise.start();
+}
+
+function playSound(type) {
+    if(ac.state === 'suspended') ac.resume();
+    const now = ac.currentTime; const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+    if(type === 'plant') { o.type = 'sine'; o.frequency.setValueAtTime(600, now); o.frequency.exponentialRampToValueAtTime(1000, now+0.2); g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.01, now+0.2); o.start(); o.stop(now+0.2); }
+    if(type === 'water') { o.type = 'sine'; o.frequency.setValueAtTime(1000, now); o.frequency.linearRampToValueAtTime(1400, now+0.3); g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0.01, now+0.3); o.start(); o.stop(now+0.3); }
+    if(type === 'harvest') { o.type = 'triangle'; o.frequency.setValueAtTime(800, now); o.frequency.exponentialRampToValueAtTime(1600, now+0.15); g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.01, now+0.15); o.start(); o.stop(now+0.15); }
+    if(type === 'error') { o.type = 'sawtooth'; o.frequency.setValueAtTime(200, now); o.frequency.linearRampToValueAtTime(150, now+0.2); g.gain.setValueAtTime(0.05, now); g.gain.linearRampToValueAtTime(0.01, now+0.2); o.start(); o.stop(now+0.2); }
+    if(type === 'success') { o.type = 'sine'; o.frequency.setValueAtTime(523.25, now); o.frequency.setValueAtTime(659.25, now+0.1); o.frequency.setValueAtTime(783.99, now+0.2); g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0.01, now+0.5); o.start(); o.stop(now+0.5); }
+    if(type === 'pickup') { o.type = 'sine'; o.frequency.setValueAtTime(1000, now); o.frequency.linearRampToValueAtTime(2000, now+0.4); g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0.01, now+0.4); o.start(); o.stop(now+0.4); }
+    if(type === 'compost') { o.type = 'sine'; o.frequency.setValueAtTime(400, now); o.frequency.linearRampToValueAtTime(800, now+0.4); g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0.01, now+0.4); o.start(); o.stop(now+0.4); }
+    if(type === 'coin') { o.type = 'sine'; o.frequency.setValueAtTime(1200, now); o.frequency.setValueAtTime(1800, now+0.1); g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0.01, now+0.3); o.start(); o.stop(now+0.3); }
+    if(type === 'levelup') { o.type = 'triangle'; o.frequency.setValueAtTime(500, now); o.frequency.setValueAtTime(700, now+0.1); o.frequency.setValueAtTime(1000, now+0.2); o.frequency.setValueAtTime(1400, now+0.3); g.gain.setValueAtTime(0.15, now); g.gain.linearRampToValueAtTime(0.01, now+0.8); o.start(); o.stop(now+0.8); }
+    if(type === 'step') { o.type = 'sine'; o.frequency.setValueAtTime(200, now); g.gain.setValueAtTime(0.01, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.1); o.start(); o.stop(now+0.1); }
+    if(type === 'splash') { o.type = 'noise'; o.frequency.setValueAtTime(400, now); g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.01, now+0.3); o.start(); o.stop(now+0.3); }
+}
+
+const MAX_LEVEL = 10;
+const SEED_TYPES = [
+    { name: "Star", color: 0xffea00, cost: 5, growTime: 0.002, waterCost: 10, lvl: 1 },
+    { name: "Lunar", color: 0x00bcd4, cost: 10, growTime: 0.0015, waterCost: 15, lvl: 3 },
+    { name: "Solar", color: 0xff3d00, cost: 20, growTime: 0.001, waterCost: 4, lvl: 5 } 
+];
+
+const RELIC_DATA = [
+    { name: "Star Wand", desc: "Use this to till the earth and dig up buried magical artifacts!" },
+    { name: "Fairy Spores", desc: "Plant these in tilled soil. Press [2] to cycle seed types!" },
+    { name: "Cloud Flask", desc: "Collects magic rain. Use it to water your crops." },
+    { name: "Moon Blade", desc: "A sharp, glowing sickle to harvest fully grown crops." },
+    { name: "Dream Catcher", desc: "Use this to clean trash from the stream and catch bugs!" },
+    { name: "Pixie Dust", desc: "Magical fertilizer! Speeds up crop growth massively." },
+    { name: "Sprinkler Crystal", desc: "Hover over a crop. Waters it automatically over time!" },
+    { name: "Star Rod", desc: "Click on the water to fish! Wait for splash, then pull." },
+    { name: "Magic Moss", desc: "Apply to tilled soil to reduce crop water cost by 50%!" }
+];
+
+const QUESTS = [
+    { title: "Wizard's Legacy", text: "Find all 9 relics in the hall!", tip: "Search the rooms. The magic relics glow brightly." },
+    { title: "Water 101: Thirsty Earth", text: "Till soil, Plant a Star Fruit, and Water it.", tip: "Watering manually costs 10 Drops. This adds up quickly!" },
+    { title: "Water 201: Mulching", text: "Buy Magic Moss (10🪙) at the Market and apply to soil.", tip: "Moss prevents evaporation, halving water costs!" },
+    { title: "Water 301: Micro-Irrigation", text: "Buy a Sprinkler (20🪙) and attach it to a crop.", tip: "Sprinklers water automatically using tiny magic drops." },
+    { title: "Water 401: Rain Harvesting", text: "Refill your Flask from the glowing Rain Barrel.", tip: "The Jal Kund barrel fills during Starfall. Free water!" },
+    { title: "Water 501: Desert Bloom", text: "Reach Level 5 and plant a Solar Pumpkin.", tip: "Solar Pumpkins naturally require 60% less water." },
+    { title: "Arch Mage of Conservation", text: "You have mastered magical farming!", tip: "Keep upgrading tools and expanding your farm." }
+];
+
+let state = {
+    ecoPoints: 0, seeds: [0, 0, 0], harvested: 0, waterSupply: 100, trash: 0, fertilizer: 0, drips: 0, fish: 0, bugs: 0, mulch: 0,
+    tool: -1, currentSeedType: 0, questStep: 0, weather: 'sunny', ticks: 0, timeOfDay: 0,
+    toolsUnlocked: [false, false, false, false, false, false, false, false, false],
+    toolTiers: { flask: 1, net: 1 },
+    paused: false, level: 1, xp: 0, coins: 0, fishingState: 0, fishingTimer: 0,
+    minigameActive: false, minigameTarget: null, mgCursorPos: 0, mgCursorDir: 1
+};
+
+let nFlags = { intro: false, seal: false };
+
+try { const d = localStorage.getItem('magic_farm_v17'); if(d) { state = Object.assign(state, JSON.parse(d)); nFlags.intro = true; } } catch(e) {}
+setInterval(() => { localStorage.setItem('magic_farm_v17', JSON.stringify(state)); }, 5000);
+const worldData = new Map(); 
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf8bbd0); 
+scene.fog = new THREE.FogExp2(0xf8bbd0, 0.025);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.05, 100); 
+camera.position.set(0, 1.6, 6); 
+
+const renderer = new THREE.WebGLRenderer({antialias: false, powerPreference: "high-performance"});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); 
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+renderer.toneMapping = THREE.ACESFilmicToneMapping; 
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb39ddb, 0.7); 
+scene.add(hemiLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff59d, 2.0); 
+sunLight.position.set(40, 50, 20);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 1024; 
+sunLight.shadow.mapSize.height = 1024;
+sunLight.shadow.camera.near = 0.5; sunLight.shadow.camera.far = 100;
+const dBox = 30;
+sunLight.shadow.camera.left = -dBox; sunLight.shadow.camera.right = dBox;
+sunLight.shadow.camera.top = dBox; sunLight.shadow.camera.bottom = -dBox;
+sunLight.shadow.bias = -0.001; 
+scene.add(sunLight);
+
+let hudVisibilityTimer = 0;
+let narratorTimer = null;
+
+function wakeHUD() {
+    const hud = document.getElementById('hud');
+    if(hud) { hud.classList.add('show-hud'); hudVisibilityTimer = 180; }
+}
+
+function triggerNarrator(text, duration=5000) {
+    playSound('success');
+    const box = document.getElementById('narratorBox');
+    const txt = document.getElementById('narratorText');
+    if(txt) txt.textContent = text;
+    if(box) {
+        box.classList.add('show');
+        if(narratorTimer) clearTimeout(narratorTimer);
+        narratorTimer = setTimeout(() => box.classList.remove('show'), duration);
+    }
+    wakeHUD();
+}
+
+// Show intro without Firebase logic
+document.getElementById('loading').style.opacity = '0';
+setTimeout(() => { 
+    document.getElementById('loading').style.display = 'none'; 
+    document.getElementById('intro').style.display = 'flex'; 
+}, 800);
+
+const toolHolder = new THREE.Group(); camera.add(toolHolder); scene.add(camera); 
+let currentToolMesh = null; let isSwinging = false; let swingTween = 0;
+
+window.setTool = (t) => { 
+    if(!state.toolsUnlocked[t]) return;
+    
+    if(t === 1 && state.tool === 1) {
+        state.currentSeedType = (state.currentSeedType + 1) % SEED_TYPES.length;
+        if(SEED_TYPES[state.currentSeedType].lvl > state.level) state.currentSeedType = 0;
+        playSound('step');
+    } else {
+        state.tool = t; 
+    }
+    
+    state.fishingState = 0; window.updateUI(); 
+    wakeHUD(); 
+    
+    if(currentToolMesh) { toolHolder.remove(currentToolMesh); currentToolMesh = null; }
+    
+    const toolInfo = document.getElementById('toolInfo');
+    if(t !== -1 && toolInfo) {
+        toolInfo.innerHTML = `<b>${RELIC_DATA[t].name}:</b> ${RELIC_DATA[t].desc}`;
+        toolInfo.style.opacity = 1;
+    } else if(toolInfo) {
+        toolInfo.style.opacity = 0;
+    }
+    
+    const models = [ createWand(), createSack(SEED_TYPES[state.currentSeedType].color), createFlask(), createMoonBlade(), createNet(), createSack(0xba68c8), createSprinkler(), createFishingRod(), createSack(0x69f0ae) ];
+    currentToolMesh = models[t];
+    
+    if(currentToolMesh) {
+        currentToolMesh.position.set(window.isMobile ? 0.3 : 0.4, -0.4, -0.6);
+        if(t===0) currentToolMesh.rotation.set(0, Math.PI/2, Math.PI/4); 
+        else if(t===2) currentToolMesh.rotation.set(0, -Math.PI/4, 0); 
+        else if(t===3) currentToolMesh.rotation.set(Math.PI/2, 0, Math.PI/4); 
+        else if(t===4) currentToolMesh.rotation.set(Math.PI/4, 0, 0); 
+        else if(t===7) currentToolMesh.rotation.set(Math.PI/6, Math.PI/8, 0); 
+        else currentToolMesh.rotation.set(0,0,0); 
+        
+        currentToolMesh.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+        toolHolder.add(currentToolMesh);
+    }
+};
+
+function triggerSwing() {
+    isSwinging = true; swingTween = 0;
+    const flash = document.getElementById('flash');
+    if(flash) { flash.style.background = "rgba(255,255,255,0.15)"; flash.style.opacity = "1"; setTimeout(()=>flash.style.opacity = "0", 150); }
+}
+
+const mats = {
+    grass: new THREE.MeshStandardMaterial({color: 0xa5d6a7, roughness: 0.9, bumpMap: bumpMapSoil, bumpScale: 0.05}), 
+    path: new THREE.MeshStandardMaterial({color: 0xe1bee7, roughness: 1.0, bumpMap: bumpMapSoil, bumpScale: 0.1}), 
+    soil: new THREE.MeshStandardMaterial({color: 0x8d6e63, roughness: 0.9, bumpMap: bumpMapSoil, bumpScale: 0.2}), 
+    wet: new THREE.MeshStandardMaterial({color: 0x5d4037, roughness: 0.4, metalness: 0.1, bumpMap: bumpMapSoil, bumpScale: 0.15}), 
+    water: new THREE.MeshPhysicalMaterial({ color: 0x80deea, transmission: 0.8, opacity: 1, transparent: true, roughness: 0.1, ior: 1.33, thickness: 2.0, normalMap: magicWaterMap, normalScale: new THREE.Vector2(0.3, 0.3), emissive: 0x80deea, emissiveIntensity: 0.1 }),
+    concrete: new THREE.MeshStandardMaterial({color: 0xf3e5f5, roughness: 0.8, bumpMap: bumpMapBrick, bumpScale: 0.05}),
+    wood: new THREE.MeshStandardMaterial({color: 0xce93d8, roughness: 0.9, map: texWood}),
+    stem: new THREE.MeshStandardMaterial({color: 0xfff9c4, roughness: 0.9}),
+    
+    cap1: new THREE.MeshStandardMaterial({map: createMushroomTexture('#f48fb1'), roughness: 0.6}), 
+    cap2: new THREE.MeshStandardMaterial({map: createMushroomTexture('#80deea'), roughness: 0.6}), 
+    cap3: new THREE.MeshStandardMaterial({map: createMushroomTexture('#fff59d'), roughness: 0.6}), 
+    
+    brick: new THREE.MeshStandardMaterial({color: 0xffe0b2, roughness: 0.9, bumpMap: bumpMapBrick, bumpScale: 0.08}), 
+    roof: new THREE.MeshStandardMaterial({color: 0xf48fb1, roughness: 0.9}),
+    crystal: new THREE.MeshPhysicalMaterial({color: 0x84ffff, transmission: 0.9, opacity: 1, transparent: true, roughness: 0.1, ior: 2.0, emissive: 0x84ffff, emissiveIntensity: 0.4}), 
+    metal: new THREE.MeshStandardMaterial({color: 0xffe57f, metalness: 0.8, roughness: 0.3}),
+    crop: new THREE.MeshStandardMaterial({color: 0x69f0ae}),
+    
+    cropStar: new THREE.MeshStandardMaterial({color: 0xffea00, roughness: 0.2, emissive: 0xffea00, emissiveIntensity: 0.5}),
+    cropLunar: new THREE.MeshStandardMaterial({color: 0x00bcd4, roughness: 0.2, emissive: 0x00bcd4, emissiveIntensity: 0.5}),
+    cropSolar: new THREE.MeshStandardMaterial({color: 0xff3d00, roughness: 0.2, emissive: 0xff3d00, emissiveIntensity: 0.5}),
+    
+    compost: new THREE.MeshStandardMaterial({color: 0xba68c8, roughness: 0.8, bumpMap: bumpMapSoil, bumpScale: 0.3}),
+    skin1: new THREE.MeshStandardMaterial({map: faceMap1, roughness: 0.7}),
+    skin2: new THREE.MeshStandardMaterial({map: faceMap2, roughness: 0.7}),
+    fairyWings: new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.5, emissive: 0xffffff, emissiveIntensity: 0.3, side: THREE.DoubleSide}),
+    fairyDress: new THREE.MeshStandardMaterial({color: 0x4dd0e1, roughness: 0.9}),
+    marble: new THREE.MeshStandardMaterial({color: 0xfff8e1, roughness: 0.2, metalness: 0.1}),
+    mulchOverlay: new THREE.MeshStandardMaterial({color: 0x69f0ae, transparent: true, opacity: 0.6, roughness: 1.0})
+};
+
+const geos = {
+    tile: new THREE.BoxGeometry(1, 1, 1), canal: new THREE.BoxGeometry(1, 0.4, 1), bank: new THREE.BoxGeometry(1, 0.6, 0.5),
+    stem: new THREE.CylinderGeometry(0.3, 0.4, 2.5, 8), cap: new THREE.SphereGeometry(2.0, 12, 12, 0, Math.PI*2, 0, Math.PI/2), 
+    stalk: new THREE.CylinderGeometry(0.05, 0.05, 0.5, 5), flower: new THREE.IcosahedronGeometry(0.3, 0), trash: new THREE.IcosahedronGeometry(0.2, 0),
+    head: new THREE.BoxGeometry(0.4, 0.4, 0.4), body: new THREE.ConeGeometry(0.25, 0.7, 8),
+    melon: new THREE.SphereGeometry(0.3, 8, 8), pumpkin: new THREE.DodecahedronGeometry(0.35, 0),
+    mulchPatch: new THREE.PlaneGeometry(0.9, 0.9), barrel: new THREE.CylinderGeometry(0.8, 0.8, 1, 12)
+};
+
+const CHUNK_SIZE = 16; const VISIBILITY = 1; 
+const chunkMap = new Map();
+const activeInteractables = new Set(); let interactablesArray = [];
+const activeTrash = new Set(); const activeCrops = new Set(); const activeNPCs = new Set(); const activeWater = new Set(); const activeFloaters = new Set(); const activeWindmills = new Set(); const activeBugs = new Set();
+const activeBarrels = new Set();
+const pickUpItems = [];
+
+function updateInteractables() { interactablesArray = Array.from(activeInteractables); }
+function seededRandom(x, z) { let n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453123; return n - Math.floor(n); }
+function getTileKey(x, z) { return `${x},${z}`; }
+function getChunkKey(cx, cz) { return `${cx},${cz}`; }
+
+function addCollider(mesh, collidersArray) { mesh.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(mesh); box.expandByScalar(-0.1); collidersArray.push(box); }
+const pBox = new THREE.Box3(); const pMin = new THREE.Vector3(); const pMax = new THREE.Vector3();
+function checkCollision(pos, radius) {
+    pMin.set(pos.x - radius, 0.1, pos.z - radius); pMax.set(pos.x + radius, 1.8, pos.z + radius); pBox.set(pMin, pMax);
+    for(let [key, chunk] of chunkMap.entries()) { if(chunk.colliders) { for(let box of chunk.colliders) { if(pBox.intersectsBox(box)) return true; } } } return false;
+}
+
+function createMushroom(x, z, h, colliders, group) {
+    const tree = new THREE.Group();
+    const trunk = new THREE.Mesh(geos.stem, mats.stem); trunk.position.y=1.25; trunk.castShadow=true; trunk.receiveShadow=true; tree.add(trunk);
+    const capMats = [mats.cap1, mats.cap2, mats.cap3]; const capMat = capMats[Math.floor(seededRandom(x,z) * capMats.length)];
+    const leaves = new THREE.Mesh(geos.cap, capMat); leaves.position.y=2.5; leaves.castShadow=true; tree.add(leaves);
+    tree.position.set(x, h, z); group.add(tree); 
+    tree.updateMatrixWorld(true); const trunkBox = new THREE.Box3().setFromObject(trunk); trunkBox.expandByScalar(-0.05); colliders.push(trunkBox);
+}
+function createFloatingCrystal(x, z, h, group) {
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.5), mats.crystal); crystal.position.set(x, h + 3 + Math.random()*2, z); crystal.castShadow = true;
+    crystal.userData = {type: 'floater', offset: Math.random()*100}; group.add(crystal); activeFloaters.add(crystal);
+}
+function createFairy(x, z, isTrader=false) {
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(geos.body, mats.fairyDress); body.position.y = 0.35; group.add(body);
+    const skinMat = seededRandom(x,z) > 0.5 ? mats.skin1 : mats.skin2;
+    const head = new THREE.Mesh(geos.head, skinMat); head.position.y = 0.9; group.add(head);
+    const wingGeo = new THREE.PlaneGeometry(0.5, 0.7);
+    const lw = new THREE.Mesh(wingGeo, mats.fairyWings); lw.position.set(-0.2, 0.5, -0.1); lw.rotation.y = -Math.PI/4; group.add(lw);
+    const rw = new THREE.Mesh(wingGeo, mats.fairyWings); rw.position.set(0.2, 0.5, -0.1); rw.rotation.y = Math.PI/4; group.add(rw);
+    group.position.set(x, 1.0, z); group.userData = { type: isTrader ? 'trader' : 'villager', dir: Math.random() * Math.PI * 2, speed: 0.015 + Math.random() * 0.02, wait: 0, lw, rw };
+    if(!isTrader) activeNPCs.add(group); return group;
+}
+function createWindmill(x, z, colliders, group) {
+    const wGroup = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2, 4, 8), mats.brick); base.position.y=2; base.castShadow=true; wGroup.add(base);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8, 0, Math.PI*2, 0, Math.PI/2), mats.roof); dome.position.y=4; dome.castShadow=true; wGroup.add(dome);
+    const blades = new THREE.Group();
+    for(let i=0; i<4; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 0.1), mats.wood); b.position.y = 1.5; b.rotation.z = (Math.PI/2)*i; blades.add(b); }
+    blades.position.set(0, 4, 1.6); wGroup.add(blades);
+    wGroup.position.set(x, 0, z); group.add(wGroup); addCollider(base, colliders);
+    activeWindmills.add({mesh: blades, speed: 0.02 + Math.random()*0.03});
+}
+function createRuins(x, z, colliders, group) {
+    const rGroup = new THREE.Group();
+    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3, 8), mats.marble); p1.position.set(-2, 1.5, 0); p1.castShadow=true; rGroup.add(p1); addCollider(p1, colliders);
+    const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2, 8), mats.marble); p2.position.set(2, 1, 0); p2.castShadow=true; p2.rotation.z=0.2; rGroup.add(p2); addCollider(p2, colliders);
+    const arch = new THREE.Mesh(new THREE.BoxGeometry(5, 0.6, 0.8), mats.marble); arch.position.set(-0.5, 3.3, 0); arch.rotation.z=0.1; arch.castShadow=true; rGroup.add(arch);
+    rGroup.position.set(x, 0, z); group.add(rGroup);
+}
+function createRainBarrel(x, z, colliders, group) {
+    const bg = new THREE.Group();
+    const base = new THREE.Mesh(geos.barrel, mats.brick); base.position.y = 0.5; base.receiveShadow=true; base.castShadow=true; bg.add(base);
+    const water = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.9, 12), mats.water); water.position.y = 0.51; bg.add(water);
+    bg.position.set(x, 0, z);
+    bg.traverse(c => { if(c.isMesh) c.userData = {type: 'barrel', water: 100, waterMesh: water}; });
+    group.add(bg); addCollider(bg, colliders); activeInteractables.add(bg); activeBarrels.add(bg);
+}
+
+function createWand() { const g = new THREE.Group(); const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.04, 1.2), mats.wood); g.add(stick); const star = new THREE.Mesh(new THREE.IcosahedronGeometry(0.15), mats.metal); star.position.y = 0.6; g.add(star); return g; }
+function createSack(colorHex) { return new THREE.Mesh(new THREE.DodecahedronGeometry(0.25), new THREE.MeshStandardMaterial({color: colorHex, emissive: colorHex, emissiveIntensity:0.3})); }
+function createFlask() { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), mats.crystal); g.add(body); const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3), mats.metal); neck.position.y = 0.2; g.add(neck); return g; }
+function createMoonBlade() { const g = new THREE.Group(); const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4), mats.wood); g.add(handle); const blade = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.04, 8, 16, Math.PI * 1.2), mats.metal); blade.position.set(0.15, 0.2, 0); blade.rotation.z = Math.PI/4; g.add(blade); return g; }
+function createNet() { const g = new THREE.Group(); const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.8), mats.wood); g.add(stick); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.02, 8, 16), mats.metal); ring.position.set(0, 0.9, 0); g.add(ring); const netM = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshBasicMaterial({color:0xffffff, wireframe:true, transparent:true, opacity:0.5})); netM.position.set(0, 0.9, 0); netM.rotation.x = Math.PI; g.add(netM); return g; }
+function createSprinkler() { const g = new THREE.Group(); const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8), mats.metal); pipe.rotation.x = Math.PI/2; g.add(pipe); const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.15), mats.crystal); crystal.position.y = 0.15; g.add(crystal); return g; }
+function createFishingRod() { const g = new THREE.Group(); const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.03, 2.0), mats.wood); stick.position.y=0.5; g.add(stick); const line = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 1.5), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.5})); line.position.set(0, 0.75, -0.75); line.rotation.x=Math.PI/4; g.add(line); return g; }
+
+function buildWizardCottage(group, colliders) {
+    function addWall(w, h, d, x, y, z) { const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats.brick); wall.position.set(x, y, z); wall.castShadow = true; wall.receiveShadow = true; group.add(wall); addCollider(wall, colliders); }
+    
+    addWall(16, 4.5, 0.5, 0, 2.25, -8); 
+    addWall(0.5, 4.5, 16, -8, 2.25, 0); 
+    addWall(0.5, 4.5, 16, 8, 2.25, 0);  
+    addWall(6, 4.5, 0.5, -5, 2.25, 8);  
+    addWall(6, 4.5, 0.5, 5, 2.25, 8);   
+    addWall(4, 1.5, 0.5, 0, 3.75, 8);   
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(12, 6, 4), mats.roof); roof.rotation.y = Math.PI/4; roof.position.set(0, 7.5, 0); roof.castShadow = true; group.add(roof);
+
+    const shrine = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 1, 8), mats.metal); shrine.position.set(0, 0.5, 0); group.add(shrine); addCollider(shrine, colliders);
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.6), mats.crystal); crystal.position.set(0, 2.2, 0); group.add(crystal);
+
+    function createPickup(toolId, angleDeg, mesh) {
+        if(state.toolsUnlocked[toolId]) return;
+        
+        const r = 5.5; 
+        const x = Math.cos(angleDeg * Math.PI/180) * r;
+        const z = Math.sin(angleDeg * Math.PI/180) * r;
+
+        const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 0.8, 8), mats.marble);
+        ped.position.set(x, 0.4, z); ped.receiveShadow = true; group.add(ped); 
+        
+        mesh.position.set(x, 1.3, z); 
+        mesh.userData = {type: 'pickup', toolId: toolId, parentGroup: mesh};
+        mesh.traverse(child => { if(child.isMesh) { child.castShadow=true; child.userData = mesh.userData; }});
+        
+        const glowSphere = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 8), new THREE.MeshBasicMaterial({color: 0xffea00, transparent: true, opacity: 0.3, wireframe: true})); 
+        glowSphere.userData = mesh.userData; mesh.add(glowSphere);
+        group.add(mesh); activeInteractables.add(mesh); pickUpItems.push(mesh);
+    }
+    
+    createPickup(0, 200, createWand()); 
+    createPickup(1, 240, createSack(0xf48fb1)); 
+    createPickup(2, 280, createFlask());
+    createPickup(3, 320, createMoonBlade()); 
+    createPickup(4, 340, createNet()); 
+    createPickup(5, 40, createSack(0xba68c8));
+    createPickup(6, 140, createSprinkler()); 
+    createPickup(7, 160, createFishingRod()); 
+    createPickup(8, 180, createSack(0x69f0ae)); 
+}
+
+function buildDesignatedFarm(group, colliders) {
+    function addFence(w, d, x, z) { const fence = new THREE.Mesh(new THREE.BoxGeometry(w, 0.6, d), mats.wood); fence.position.set(x, 0.3, z); fence.castShadow = true; group.add(fence); addCollider(fence, colliders); }
+    addFence(12, 0.1, 0, 21); addFence(0.1, 12, -6, 15); addFence(0.1, 12, 6, 15); 
+
+    const pitGroup = new THREE.Group();
+    const pitBase = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.5, 12), mats.brick); pitBase.position.y = 0.25; pitBase.receiveShadow=true; pitGroup.add(pitBase);
+    const pitHole = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.51, 12), mats.compost); pitHole.position.y = 0.25; pitGroup.add(pitHole);
+    pitGroup.position.set(4, 0, 19); pitGroup.castShadow = true;
+    pitGroup.traverse(child => { if(child.isMesh) child.userData = {type: 'compostPit'}; });
+    group.add(pitGroup); addCollider(pitGroup, colliders); activeInteractables.add(pitGroup);
+    createRainBarrel(-4, 19, colliders, group);
+}
+
+function buildFairyMarket(group, colliders, cx, cz) {
+    const offsetX = cx * CHUNK_SIZE; const offsetZ = cz * CHUNK_SIZE;
+    const market = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 0.5, 16), mats.concrete); base.position.y = 0.25; market.add(base);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(3.8, 16, 16, 0, Math.PI*2, 0, Math.PI/2), mats.crystal); dome.position.y = 0.5; market.add(dome);
+    const trader = createFairy(0, 0, true); trader.position.set(0, 1.0, 4); market.add(trader);
+    market.position.set(offsetX - 2, 0, offsetZ - 2);
+    group.add(market); addCollider(market, colliders); activeInteractables.add(market);
+}
+
+function loadChunk(cx, cz) {
+    const chunkKey = getChunkKey(cx, cz); if(chunkMap.has(chunkKey)) return;
+    const group = new THREE.Group(); const colliders = [];
+    
+    if(cx === 0 && cz === 0) { buildWizardCottage(group, colliders); }
+    if(cx === 0 && cz === 1) { buildDesignatedFarm(group, colliders); }
+    if(cx === 1 && cz === 0) { buildFairyMarket(group, colliders, cx, cz); } 
+
+    let hasWindmill = false; let hasRuins = false; let hasPond = false;
+    if(cx !== 0 || cz > 1) {
+        const rng = seededRandom(cx*3, cz*3);
+        if(rng < 0.1) hasWindmill = true;
+        else if(rng < 0.15) hasRuins = true;
+        else if(rng < 0.3) hasPond = true;
+    }
+
+    const grassTransforms = [];
+    for(let tx = 0; tx < CHUNK_SIZE; tx++) {
+        for(let tz = 0; tz < CHUNK_SIZE; tz++) {
+            const x = cx * CHUNK_SIZE + tx - CHUNK_SIZE/2; 
+            const z = cz * CHUNK_SIZE + tz - CHUNK_SIZE/2;
+            const tileKey = getTileKey(x, z);
+            
+            const isCanal = (x >= 24 && x <= 26);
+            const isPond = hasPond && (tx > 4 && tx < 12 && tz > 4 && tz < 12);
+            const isHouseArea = (cx===0 && cz===0 && x >= -8 && x <= 8 && z >= -8 && z <= 8);
+            const isFarmArea = (cx===0 && (cz===0||cz===1) && x >= -6 && x <= 6 && z >= 9 && z <= 21);
+            const isVillageHub = (cx===1 && cz===0 && x >= 10 && x <= 22 && z >= -6 && z <= 6);
+            const isPath = isHouseArea || isVillageHub || (cx===0 && cz===0 && x >= -2 && x <= 2 && z >= 8 && z <= 10);
+
+            const savedData = worldData.get(tileKey);
+            
+            if(isCanal || isPond) {
+                const water = new THREE.Mesh(geos.canal, mats.water); water.position.set(x, 0.1, z); water.receiveShadow = true; 
+                water.userData = { offset: z * 0.5, type: 'water' }; group.add(water); activeWater.add(water); activeInteractables.add(water);
+                
+                if(isCanal && (x === 24 || x === 26)) { const bank = new THREE.Mesh(geos.bank, mats.concrete); bank.position.set(x === 24 ? 23.5 : 26.5, 0.3, z); bank.rotation.y = Math.PI/2; bank.matrixAutoUpdate = false; bank.updateMatrix(); group.add(bank); addCollider(bank, colliders); }
+                if(isCanal && seededRandom(x*2, z*2) > 0.90) { const trash = new THREE.Mesh(geos.trash, new THREE.MeshStandardMaterial({color: 0x9e9e9e, metalness: 0.5})); trash.position.set(x, 0.4, z); trash.castShadow = true; trash.userData = {type: 'trash', speed: 0.02 + seededRandom(x,z)*0.02}; group.add(trash); activeInteractables.add(trash); activeTrash.add(trash); }
+            } else {
+                let h = (isPath || isFarmArea) ? 0 : Math.sin(x*0.2)*0.3 + Math.cos(z*0.2)*0.3;
+                let currentType = savedData ? savedData.type : (isPath ? 'path' : (isFarmArea ? 'soil' : 'grass'));
+                let mat = mats.grass;
+                if(currentType === 'path') mat = mats.path; if(currentType === 'soil') mat = mats.soil; if(currentType === 'crop' || currentType === 'ready') mat = (savedData && savedData.watered) ? mats.wet : mats.soil;
+                
+                let isArtifact = false;
+                if(currentType === 'grass' && seededRandom(x, z) < 0.02 && !isHouseArea) {
+                    isArtifact = true; currentType = 'artifact';
+                    const glow = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({color: 0xffea00, transparent:true, opacity:0.5})); glow.rotation.x = -Math.PI/2; glow.position.set(x, (1+h)/2 + 0.01, z); group.add(glow);
+                }
+
+                const tile = new THREE.Mesh(geos.tile, mat); tile.position.set(x, (1+h)/2 - 0.5, z); tile.receiveShadow = true; if(h > 0.1) tile.castShadow = true; tile.matrixAutoUpdate = false; tile.updateMatrix();
+                tile.userData = { type: currentType, yOffset: tile.position.y + 0.5, key: tileKey };
+                if(savedData) { Object.assign(tile.userData, savedData); }
+                group.add(tile); if(currentType !== 'path') activeInteractables.add(tile); 
+
+                if(tile.userData.mulched) {
+                    const mulch = new THREE.Mesh(geos.mulchPatch, mats.mulchOverlay); mulch.rotation.x = -Math.PI/2; mulch.position.set(0, 0.51, 0); tile.add(mulch);
+                }
+
+                if(currentType === 'crop' || currentType === 'ready') {
+                    const cropMesh = new THREE.Group();
+                    const stalk = new THREE.Mesh(geos.stalk, mats.crop); stalk.position.y = 0.2; stalk.castShadow = true; cropMesh.add(stalk);
+                    const s = currentType === 'ready' ? 2.5 : 0.5 + (tile.userData.growth * 2.0); cropMesh.scale.set(s,s,s);
+                    if(currentType === 'ready') { 
+                        let cMat = mats.cropStar; let cGeo = geos.flower;
+                        if(tile.userData.cropType === 1) { cMat = mats.cropLunar; cGeo = geos.melon; }
+                        else if(tile.userData.cropType === 2) { cMat = mats.cropSolar; cGeo = geos.pumpkin; }
+                        const fruit = new THREE.Mesh(cGeo, cMat); fruit.position.y = 0.5; fruit.castShadow = true; cropMesh.add(fruit); 
+                    }
+                    if(tile.userData.drip) { const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8), mats.metal); pipe.rotation.z = Math.PI/2; pipe.position.set(0, 0.05, 0); pipe.castShadow=true; cropMesh.add(pipe); const sprinklerCrys = new THREE.Mesh(new THREE.OctahedronGeometry(0.1), mats.crystal); sprinklerCrys.position.set(0, 0.2, 0); cropMesh.add(sprinklerCrys); }
+                    cropMesh.position.y = tile.userData.yOffset; tile.add(cropMesh); tile.userData.cropMesh = cropMesh; activeCrops.add(tile.userData);
+                }
+
+                if(currentType === 'grass' && !isHouseArea && !isFarmArea && !isVillageHub) {
+                    if(hasWindmill && tx === 8 && tz === 8) { createWindmill(x, z, colliders, group); hasWindmill=false;}
+                    else if(hasRuins && tx === 8 && tz === 8) { createRuins(x, z, colliders, group); hasRuins=false;}
+                    else {
+                        const localRNG = seededRandom(x, z);
+                        if(localRNG > 0.96) { createMushroom(x, z, h, colliders, group); } 
+                        else if(localRNG > 0.94) { createFloatingCrystal(x, z, h, group); } 
+                        else if(localRNG < 0.01) { group.add(createFairy(x, z)); }
+                        else if(localRNG > 0.01 && localRNG < 0.03) {
+                            const bug = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1), new THREE.MeshBasicMaterial({color: 0xffea00}));
+                            bug.position.set(x, h+1, z); bug.userData = {type: 'bug', offset: Math.random()*100, baseY: h+1};
+                            group.add(bug); activeBugs.add(bug); activeInteractables.add(bug);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if(grassTransforms.length > 0) {
+        const grassGeo = new THREE.ConeGeometry(0.05, 0.3, 3); const instancedGrass = new THREE.InstancedMesh(grassGeo, mats.leaf, grassTransforms.length); instancedGrass.receiveShadow = true; instancedGrass.castShadow = false; grassTransforms.forEach((mat, i) => instancedGrass.setMatrixAt(i, mat)); group.add(instancedGrass);
+    }
+    scene.add(group); chunkMap.set(chunkKey, { group, colliders, cx, cz });
+    updateInteractables();
+}
+
+function unloadChunk(chunkKey) {
+    const chunk = chunkMap.get(chunkKey); if(!chunk) return; scene.remove(chunk.group);
+    const filterSet = (set) => {
+        for(let item of set) {
+            let itemX = item.position ? item.position.x : (item.cropMesh ? item.cropMesh.parent.position.x : 0); let itemZ = item.position ? item.position.z : (item.cropMesh ? item.cropMesh.parent.position.z : 0);
+            if(Math.floor((itemX+CHUNK_SIZE/2)/CHUNK_SIZE) === chunk.cx && Math.floor((itemZ+CHUNK_SIZE/2)/CHUNK_SIZE) === chunk.cz) { set.delete(item); }
+        }
+    };
+    filterSet(activeInteractables); filterSet(activeTrash); filterSet(activeCrops); filterSet(activeNPCs); filterSet(activeWater); filterSet(activeFloaters); filterSet(activeBugs); filterSet(activeBarrels);
+    chunkMap.delete(chunkKey);
+    updateInteractables();
+}
+
+function updateChunks() {
+    const px = Math.floor((camera.position.x + CHUNK_SIZE/2) / CHUNK_SIZE); const pz = Math.floor((camera.position.z + CHUNK_SIZE/2) / CHUNK_SIZE);
+    for(let x = px - VISIBILITY; x <= px + VISIBILITY; x++) { for(let z = pz - VISIBILITY; z <= pz + VISIBILITY; z++) { loadChunk(x, z); } }
+    for(let [key, chunk] of chunkMap.entries()) { if(Math.abs(chunk.cx - px) > VISIBILITY + 1 || Math.abs(chunk.cz - pz) > VISIBILITY + 1) unloadChunk(key); }
+}
+
+window.showFloatingText = (msg, x, y, z, color="#fff") => {
+    const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = msg; el.style.color = color; document.body.appendChild(el);
+    const vec = new THREE.Vector3(x, y, z); vec.project(camera); el.style.left = ((vec.x * .5 + .5) * window.innerWidth) + 'px'; el.style.top = ((vec.y * -.5 + .5) * window.innerHeight) + 'px';
+    setTimeout(() => el.remove(), 2000);
+}
+
+function screenFlash(color="rgba(255,255,255,0.4)") {
+    const flash = document.getElementById('flash'); if(flash) { flash.style.background = color; flash.style.opacity = "1"; setTimeout(() => flash.style.opacity = "0", 150); }
+}
+
+window.showAchievement = (title, sub, desc) => {
+    const setSafeText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    setSafeText('achTitle', title); setSafeText('achSub', sub); setSafeText('achDesc', desc);
+    const modal = document.getElementById('achievementModal');
+    if (modal) modal.style.display = 'flex';
+    state.paused = true;
+    if(!window.isMobile && document.exitPointerLock) document.exitPointerLock();
+}
+
+window.closeAchievement = () => {
+    const modal = document.getElementById('achievementModal');
+    if (modal) modal.style.display = 'none';
+    state.paused = false;
+    if(!window.isMobile && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock();
+};
+
+window.addXP = (amount) => {
+    if(state.level >= MAX_LEVEL) return;
+    state.xp += amount; let xpNeeded = state.level * 100;
+    if(state.xp >= xpNeeded) {
+        state.xp -= xpNeeded; state.level++; state.coins += 50; state.seeds[0] += 5;
+        playSound('levelup'); screenFlash("rgba(255, 234, 0, 0.6)");
+        window.showAchievement("Level Up!", `Level ${state.level} Reached`, "You are becoming a true Arch Mage! (+50 Coins, +5 Spores)");
+    }
+}
+
+function advanceQuest(nextStep, coinReward) {
+    if(state.questStep < nextStep) {
+        state.questStep = nextStep;
+        if(coinReward > 0) { state.coins += coinReward; playSound('coin'); }
+        playSound('success'); screenFlash("rgba(244, 143, 177, 0.6)");
+        window.showAchievement("Quest Complete!", QUESTS[nextStep-1].title, `Reward: +${coinReward} Coins!`);
+        window.updateUI();
+    }
+}
+
+window.updateUI = () => {
+    const setSafeText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    const setSafeDisplay = (id, display) => { const el = document.getElementById(id); if (el) el.style.display = display; };
+
+    for(let i=0; i<9; i++) {
+        const el = document.getElementById(`slot-${i}`);
+        if(el) {
+            if(state.toolsUnlocked[i]) el.classList.remove('locked');
+            el.classList.toggle('active', i === state.tool);
+        }
+    }
+    
+    setSafeText('badge-seeds', state.seeds[state.currentSeedType]);
+    setSafeDisplay('badge-seeds', state.seeds[state.currentSeedType] > 0 ? 'block' : 'none');
+    setSafeText('label-seed', SEED_TYPES[state.currentSeedType].name);
+    const seedBadge = document.getElementById('badge-seeds');
+    if (seedBadge) seedBadge.style.background = '#' + SEED_TYPES[state.currentSeedType].color.toString(16).padStart(6, '0');
+
+    setSafeText('label-flask', state.toolTiers.flask === 2 ? 'Storm' : 'Flask');
+    setSafeText('label-net', state.toolTiers.net === 2 ? 'StarNet' : 'Net');
+
+    setSafeText('coinCount', state.coins); 
+    setSafeText('levelCount', state.level);
+    
+    const xpFill = document.getElementById('xpFill');
+    if (xpFill) xpFill.style.width = state.level >= MAX_LEVEL ? '100%' : (state.xp / (state.level * 100) * 100) + '%'; 
+    setSafeText('xpText', state.level >= MAX_LEVEL ? 'MAX' : `${Math.floor(state.xp)}/${state.level*100}`);
+
+    setSafeText('badge-trash', state.trash); setSafeDisplay('badge-trash', state.trash > 0 ? 'block' : 'none');
+    setSafeText('badge-fert', state.fertilizer); setSafeDisplay('badge-fert', state.fertilizer > 0 ? 'block' : 'none');
+    setSafeText('badge-drip', state.drips); setSafeDisplay('badge-drip', state.drips > 0 ? 'block' : 'none');
+    setSafeText('badge-moss', state.mulch); setSafeDisplay('badge-moss', state.mulch > 0 ? 'block' : 'none');
+
+    setSafeText('harvestCount', state.harvested);
+    setSafeText('fishCount', state.fish);
+    setSafeText('bugCount', state.bugs);
+    
+    const waterFill = document.getElementById('waterFill');
+    if (waterFill) {
+        waterFill.style.width = state.waterSupply + '%';
+        waterFill.style.background = state.waterSupply < 20 ? 'linear-gradient(90deg, #c2185b, #ff4081)' : 'linear-gradient(90deg, #00e5ff, #2979ff)';
+    }
+
+    let currentQuest = QUESTS[state.questStep];
+    if(!currentQuest) {
+        setSafeText('questTitle', "Arch Mage"); setSafeText('questText', "You have mastered the Valley."); setSafeText('eduFact', "");
+        if(state.questStep === 6 && !state.won) {
+            state.won = true;
+            if(!window.isMobile && document.exitPointerLock) document.exitPointerLock(); 
+            const victoryEl = document.getElementById('victory');
+            if (victoryEl) victoryEl.style.display = 'flex';
+        }
+    } else {
+        setSafeText('questTitle', currentQuest.title); setSafeText('questText', currentQuest.text); setSafeText('eduFact', `Tip: ${currentQuest.tip}`);
+    }
+};
+
+function saveTileState(obj) { worldData.set(obj.userData.key, { type: obj.userData.type, watered: obj.userData.watered, growth: obj.userData.growth, fertilized: obj.userData.fertilized, drip: obj.userData.drip, mulched: obj.userData.mulched, cropType: obj.userData.cropType }); }
+
+/* ---------- INTERACTION & MINI GAME ---------- */
+const raycaster = new THREE.Raycaster(); raycaster.far = 15; 
+const center = new THREE.Vector2(0,0);
+
+function triggerMiniGame(targetObj) {
+    state.minigameActive = true;
+    state.minigameTarget = targetObj;
+    state.mgCursorPos = 0;
+    state.mgCursorDir = 1;
+    document.getElementById('minigameContainer').style.display = 'flex';
+    if(!window.isMobile && document.exitPointerLock) document.exitPointerLock();
+}
+
+const mgBtn = document.getElementById('mgBtn');
+if(mgBtn) {
+    mgBtn.onclick = () => {
+        if(!state.minigameActive) return;
+        
+        if(state.mgCursorPos >= 40 && state.mgCursorPos <= 60) {
+            playSound('levelup');
+            document.getElementById('minigameContainer').style.display = 'none';
+            state.minigameActive = false;
+            
+            const obj = state.minigameTarget;
+            const tid = obj.userData.toolId; state.toolsUnlocked[tid] = true;
+            if(tid === 1) state.seeds[0] += 5; if(tid === 5) state.fertilizer += 2; if(tid === 6) state.drips += 3; if(tid === 8) state.mulch += 5;
+            window.setTool(tid); const rootGroup = obj.userData.parentGroup || obj; rootGroup.parent.remove(rootGroup); activeInteractables.delete(rootGroup); updateInteractables();
+            
+            const idx = pickUpItems.indexOf(rootGroup); if(idx>-1) pickUpItems.splice(idx,1);
+    
+            window.showAchievement("Relic Unlocked!", RELIC_DATA[tid].name, RELIC_DATA[tid].desc);
+            
+            if(state.questStep === 0 && state.toolsUnlocked.filter(x=>x).length === 9) {
+                setTimeout(() => advanceQuest(1, 20), 3000);
+            }
+    
+            window.updateUI();
+        } else {
+            playSound('error');
+            screenFlash("rgba(244, 67, 54, 0.4)");
+            state.mgCursorPos = 0; 
+        }
+    };
+}
+
+function interact() {
+    if(state.minigameActive) return;
+
+    raycaster.setFromCamera(center, camera);
+    const hits = raycaster.intersectObjects(interactablesArray, true); 
+    
+    const cross = document.getElementById('cross'); if(cross) { cross.classList.add('active'); setTimeout(()=>cross.classList.remove('active'), 150); }
+    const tooltip = document.getElementById('actionTooltip'); if(tooltip) tooltip.style.opacity = 0;
+
+    let interactRange = state.toolTiers.net === 2 && state.tool === 4 ? 12 : 7; 
+    if(hits.length === 0 || hits[0].distance > interactRange) { if(state.tool !== -1) triggerSwing(); return; }
+    
+    const hit = hits[0]; let obj = hit.object;
+    while(obj && obj.parent && !obj.userData.type) obj = obj.parent;
+    if(!obj || !obj.userData.type) return;
+
+    if(obj.userData.type === 'pickup') { triggerMiniGame(obj); return; }
+    if(state.tool !== -1) triggerSwing();
+
+    // TRADER (MANDI) INTERACTION
+    if(obj.userData.type === 'trader') {
+        if(state.tool === 1) { 
+            const cType = SEED_TYPES[state.currentSeedType];
+            if(state.level < cType.lvl) { playSound('error'); window.showFloatingText(`Requires Lvl ${cType.lvl}!`, hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+            else if(state.coins >= cType.cost) { state.coins -= cType.cost; state.seeds[state.currentSeedType]++; playSound('coin'); window.showFloatingText(`Bought ${cType.name} (-${cType.cost}🪙)`, hit.point.x, hit.point.y+2, hit.point.z, "#ffea00"); } 
+            else { playSound('error'); window.showFloatingText(`Need ${cType.cost}🪙!`, hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+        } else if(state.tool === 8) { 
+            if(state.level < 3) { playSound('error'); window.showFloatingText(`Requires Lvl 3!`, hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+            else if(state.coins >= 10) { state.coins -= 10; state.mulch++; playSound('coin'); window.showFloatingText("Bought Moss (-10🪙)", hit.point.x, hit.point.y+2, hit.point.z, "#69f0ae"); } 
+            else { playSound('error'); window.showFloatingText("Need 10🪙 for Moss!", hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+        } else if(state.tool === 2 && state.toolTiers.flask === 1) { 
+            if(state.level < 5) { playSound('error'); window.showFloatingText(`Requires Lvl 5!`, hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+            else if(state.coins >= 100) { state.coins -= 100; state.toolTiers.flask = 2; playSound('levelup'); window.showFloatingText("Storm Flask Upgrade!", hit.point.x, hit.point.y+2, hit.point.z, "#80deea"); } 
+            else { playSound('error'); window.showFloatingText("Need 100🪙 to Upgrade!", hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+        } else if(state.tool === 4 && state.toolTiers.net === 1) { 
+            if(state.level < 5) { playSound('error'); window.showFloatingText(`Requires Lvl 5!`, hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+            else if(state.coins >= 100) { state.coins -= 100; state.toolTiers.net = 2; playSound('levelup'); window.showFloatingText("Star Net Upgrade!", hit.point.x, hit.point.y+2, hit.point.z, "#f48fb1"); } 
+            else { playSound('error'); window.showFloatingText("Need 100🪙 to Upgrade!", hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+        } else if(state.tool === 5) { 
+            if(state.coins >= 15) { state.coins -= 15; state.fertilizer++; playSound('coin'); window.showFloatingText("Bought Dust (-15🪙)", hit.point.x, hit.point.y+2, hit.point.z, "#00e676"); } else { playSound('error'); window.showFloatingText("Need 15🪙 for Dust!", hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+        } else if(state.tool === 6) { 
+            if(state.coins >= 20) { state.coins -= 20; state.drips++; playSound('coin'); window.showFloatingText("Bought Sprinkler (-20🪙)", hit.point.x, hit.point.y+2, hit.point.z, "#00e5ff"); } else { playSound('error'); window.showFloatingText("Need 20🪙 for Sprinkler!", hit.point.x, hit.point.y+2, hit.point.z, "#ff4081"); }
+        } else { 
+            let sold = false;
+            if(state.harvested > 0) { state.harvested--; state.coins += 20; window.addXP(35); window.showFloatingText("Sold Crop (+20🪙)", hit.point.x, hit.point.y+2, hit.point.z, "#ffea00"); sold=true; } 
+            else if(state.fish > 0) { state.fish--; state.coins += 15; window.addXP(30); window.showFloatingText("Sold Starfish (+15🪙)", hit.point.x, hit.point.y+2, hit.point.z, "#80deea"); sold=true; }
+            else if(state.bugs > 0) { state.bugs--; state.coins += 5; window.addXP(10); window.showFloatingText("Sold Bug (+5🪙)", hit.point.x, hit.point.y+2, hit.point.z, "#fff59d"); sold=true; }
+            if(sold) playSound('coin'); else { playSound('error'); window.showFloatingText("Equip items to buy. Or bring Goods to Sell!", hit.point.x, hit.point.y+2, hit.point.z, "#fff"); }
+        }
+        window.updateUI(); return;
+    }
+
+    if(obj.userData.type === 'water' && state.tool === 7) {
+        if(state.fishingState === 0) {
+            state.fishingState = 1; state.fishingTimer = 100 + Math.random()*150;
+            playSound('water'); window.showFloatingText("Waiting for bite...", hit.point.x, hit.point.y+1, hit.point.z, "#fff");
+        } else if(state.fishingState === 2) {
+            state.fishingState = 0; state.fish++; playSound('pickup'); window.addXP(15); screenFlash("rgba(0, 229, 255, 0.4)");
+            window.showFloatingText("Caught Starfish! (+15 XP)", hit.point.x, hit.point.y+1, hit.point.z, "#80deea");
+        } else {
+            state.fishingState = 0; playSound('error'); window.showFloatingText("Pulled too early!", hit.point.x, hit.point.y+1, hit.point.z, "#f48fb1");
+        }
+        window.updateUI(); return;
+    }
+
+    if(obj.userData.type === 'bug' && state.tool === 4) {
+        obj.parent.remove(obj); activeInteractables.delete(obj); updateInteractables(); activeBugs.delete(obj);
+        let catchYield = state.toolTiers.net === 2 ? 2 : 1;
+        state.ecoPoints += 5 * catchYield; playSound('pickup'); window.addXP(10 * catchYield); window.showFloatingText(`Bug Caught! (+${10*catchYield} XP)`, hit.point.x, hit.point.y, hit.point.z, "#fff59d");
+        window.updateUI(); return;
+    }
+
+    if(obj.userData.type === 'artifact' && state.tool === 0) {
+        obj.userData.type = 'soil'; obj.material = mats.soil; saveTileState(obj);
+        state.coins += 25; playSound('coin'); window.addXP(20); screenFlash("rgba(255, 234, 0, 0.4)");
+        window.showFloatingText("Treasure Found! (+25🪙)", hit.point.x, hit.point.y, hit.point.z, "#ffea00");
+        window.updateUI(); return;
+    }
+
+    if(obj.userData.type === 'compostPit') {
+        if(state.trash > 0) {
+            state.trash--; playSound('compost'); window.addXP(10); window.showFloatingText("Trash Cleansed! (+10 XP)", hit.point.x, hit.point.y + 1, hit.point.z, "#ff4081");
+            if(Math.random() > 0.4 || state.trash === 0) { state.fertilizer++; setTimeout(() => { playSound('success'); window.showFloatingText("+1 Pixie Dust!", hit.point.x, hit.point.y + 2, hit.point.z, "#ffea00"); window.updateUI(); }, 800); }
+        } else { playSound('error'); window.showFloatingText("Need Trash from Stream!", hit.point.x, hit.point.y + 1, hit.point.z, "#ff4081"); }
+        window.updateUI(); return;
+    }
+
+    if(obj.userData.type === 'barrel') {
+        let bData = obj.userData.parentGroup ? obj.userData.parentGroup.children[1].userData : obj.userData;
+        if(bData && bData.water > 0) {
+            let space = 100 - state.waterSupply; let take = Math.min(space, bData.water);
+            state.waterSupply += take; bData.water -= take;
+            playSound('water'); window.showFloatingText(`+${Math.floor(take)} Drops!`, hit.point.x, hit.point.y+1, hit.point.z, "#80deea");
+            if(state.questStep === 4) advanceQuest(5, 50); 
+        } else { playSound('error'); window.showFloatingText("Barrel is empty! Wait for Starfall.", hit.point.x, hit.point.y+1, hit.point.z, "#ff4081"); }
+        window.updateUI(); return;
+    }
+
+    if(state.tool === 0 && obj.userData.type === 'grass') {
+        obj.userData.type = 'soil'; obj.material = mats.soil; saveTileState(obj); playSound('plant'); window.addXP(2);
+        window.showFloatingText("Earth Touched! (+2 XP)", hit.point.x, hit.point.y, hit.point.z, "#fff");
+    }
+    else if(state.tool === 8 && obj.userData.type === 'soil') { 
+        if(state.mulch > 0) {
+            if(!obj.userData.mulched) {
+                state.mulch--; obj.userData.mulched = true; saveTileState(obj); playSound('plant'); window.addXP(5);
+                const mulchMesh = new THREE.Mesh(geos.mulchPatch, mats.mulchOverlay); mulchMesh.rotation.x = -Math.PI/2; mulchMesh.position.set(0, 0.51, 0); obj.add(mulchMesh);
+                window.showFloatingText("Moss Applied! (Saves Water)", hit.point.x, hit.point.y, hit.point.z, "#69f0ae");
+                if(state.questStep === 2) advanceQuest(3, 30); 
+            } else { playSound('error'); window.showFloatingText("Already Mossy!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+        } else { playSound('error'); window.showFloatingText("No Moss!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+    }
+    else if(state.tool === 1 && obj.userData.type === 'soil') {
+        const cType = SEED_TYPES[state.currentSeedType];
+        if(state.seeds[state.currentSeedType] > 0) {
+            state.seeds[state.currentSeedType]--; obj.userData.type = 'crop'; obj.userData.watered = false; obj.userData.growth = 0; obj.userData.fertilized = false; obj.userData.drip = false; obj.userData.cropType = state.currentSeedType;
+            const cropMesh = new THREE.Group(); const stalk = new THREE.Mesh(geos.stalk, mats.crop); stalk.position.y = 0.2; stalk.castShadow = true; cropMesh.add(stalk);
+            cropMesh.position.y = obj.userData.yOffset; obj.add(cropMesh); obj.userData.cropMesh = cropMesh; activeCrops.add(obj.userData); saveTileState(obj); window.addXP(5);
+            playSound('plant'); window.showFloatingText(`Planted ${cType.name}!`, hit.point.x, hit.point.y, hit.point.z, "#ffea00");
+            if(state.questStep === 5 && cType.name === 'Solar') advanceQuest(6, 100); 
+        } else { playSound('error'); window.showFloatingText(`No ${cType.name} Spores!`, hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+    }
+    else if(state.tool === 2 && obj.userData.type === 'crop') {
+        const cType = SEED_TYPES[obj.userData.cropType || 0];
+        let waterCost = cType.waterCost;
+        if(obj.userData.mulched) waterCost = Math.max(1, Math.floor(waterCost * 0.5)); 
+        if(state.toolTiers.flask === 2) waterCost = Math.ceil(waterCost / 2); 
+        
+        if(state.waterSupply >= waterCost) {
+            if(!obj.userData.watered) {
+                state.waterSupply -= waterCost; obj.userData.watered = true; obj.material = mats.wet; saveTileState(obj); playSound('water'); window.addXP(3);
+                window.showFloatingText(`-${waterCost} Drops (+3 XP)`, hit.point.x, hit.point.y, hit.point.z, "#00e5ff");
+                if(state.questStep === 1) advanceQuest(2, 20); 
+            } else { playSound('error'); window.showFloatingText("Already Glowing!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+        } else { playSound('error'); window.showFloatingText("Need Water!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+    }
+    else if(state.tool === 3 && obj.userData.type === 'ready') {
+        obj.userData.type = 'grass'; obj.material = mats.grass; obj.remove(obj.userData.cropMesh); activeCrops.delete(obj.userData); obj.userData.mulched = false; saveTileState(obj);
+        state.harvested++; window.addXP(20);
+        playSound('harvest'); screenFlash("rgba(255, 234, 0, 0.4)"); window.showFloatingText("Harvested! (+20 XP)", hit.point.x, hit.point.y, hit.point.z, "#ffea00");
+    }
+    else if(state.tool === 4 && obj.userData.type === 'trash') {
+        obj.parent.remove(obj); activeInteractables.delete(obj); updateInteractables(); activeTrash.delete(obj); 
+        let yieldMult = state.toolTiers.net === 2 ? 2 : 1;
+        state.trash += yieldMult; playSound('pickup'); window.addXP(5 * yieldMult);
+        window.showFloatingText(`Stream Cleansed! (+${5*yieldMult} XP)`, hit.point.x, hit.point.y, hit.point.z, "#fff");
+    }
+    else if(state.tool === 5 && obj.userData.type === 'crop') {
+        if(state.fertilizer > 0) {
+            if(!obj.userData.fertilized) {
+                state.fertilizer--; obj.userData.fertilized = true; saveTileState(obj); playSound('plant'); window.addXP(10);
+                window.showFloatingText("Magic Dust! (+10 XP)", hit.point.x, hit.point.y, hit.point.z, "#ffea00");
+            } else { playSound('error'); window.showFloatingText("Already Enchanted!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+        } else { playSound('error'); window.showFloatingText("Need Pixie Dust from Compost!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+    }
+    else if(state.tool === 6 && obj.userData.type === 'crop') { 
+        if(state.drips > 0) {
+            if(!obj.userData.drip) {
+                state.drips--; obj.userData.drip = true;
+                const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8), mats.metal); pipe.rotation.z = Math.PI/2; pipe.position.set(0, 0.05, 0); pipe.castShadow=true; obj.userData.cropMesh.add(pipe);
+                const sprinklerCrys = new THREE.Mesh(new THREE.OctahedronGeometry(0.1), mats.crystal); sprinklerCrys.position.set(0, 0.2, 0); obj.userData.cropMesh.add(sprinklerCrys);
+                saveTileState(obj); playSound('plant'); window.addXP(15);
+                window.showFloatingText("Sprinkler Bound! (+15 XP)", hit.point.x, hit.point.y, hit.point.z, "#00e5ff");
+                if(state.questStep === 3) advanceQuest(4, 40); 
+            } else { playSound('error'); window.showFloatingText("Crystal already bound!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+        } else { playSound('error'); window.showFloatingText("Buy Sprinklers at Market!", hit.point.x, hit.point.y, hit.point.z, "#ff4081"); }
+    }
+    else if(obj.userData.type === 'ready' && state.tool !== 3) {
+        playSound('error'); window.showFloatingText("Equip Moon Blade to Harvest!", hit.point.x, hit.point.y, hit.point.z, "#ff4081");
+    }
+    window.updateUI();
+}
+
+/* ---------- MAIN LOOP & MOBILE CONTROLS ---------- */
+const clock = new THREE.Clock(); let yaw = 0, pitch = 0; let currentSpeed = 0, velocityY = 0, isGrounded = true; const keys = {};
+
+window.startGame = () => { 
+    state.paused = false; 
+    document.getElementById('intro').style.display = 'none'; 
+    document.getElementById('hud').style.display = 'block'; 
+    initAudio(); 
+    if(!window.isMobile && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock(); 
+    playSound('success'); window.updateUI(); 
+    
+    if(!nFlags.intro) { setTimeout(()=>triggerNarrator("Welcome to Starlight Valley! Look around to find my 9 glowing relics."), 1000); nFlags.intro=true; }
+};
+window.resumeGame = () => { 
+    state.paused = false; 
+    document.getElementById('menu').style.display = 'none'; 
+    if(!window.isMobile && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock(); 
+};
+
+// Keyboard
+window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if(e.key >= '1' && e.key <= '9') window.setTool(parseInt(e.key) - 1);
+    if(e.key === 'escape') { state.paused = !state.paused; document.getElementById('menu').style.display = state.paused ? 'flex' : 'none'; if(state.paused && document.exitPointerLock) document.exitPointerLock(); else if(!window.isMobile && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock(); }
+});
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+// Mouse
+window.addEventListener('mousemove', e => {
+    if(document.pointerLockElement === renderer.domElement && !state.paused && !window.isMobile && !state.minigameActive) {
+        yaw -= e.movementX * 0.003; pitch -= e.movementY * 0.003; pitch = Math.max(-1.5, Math.min(1.5, pitch)); camera.rotation.set(pitch, yaw, 0, 'YXZ');
+    }
+});
+
+if(!window.isMobile) {
+    document.body.onclick = () => {
+        if(!state.paused && document.pointerLockElement === renderer.domElement && !state.minigameActive) interact();
+        else if(!state.paused && document.getElementById('intro').style.display === 'none' && document.getElementById('victory').style.display === 'none' && document.getElementById('achievementModal').style.display === 'none' && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock();
+    };
+}
+
+
+const fw = new THREE.Vector3(); const rt = new THREE.Vector3(); const upAxis = new THREE.Vector3(0,1,0);
+const nextXPos = new THREE.Vector3(); const nextZPos = new THREE.Vector3();
+
+function animate() {
+    requestAnimationFrame(animate); const dt = Math.min(clock.getDelta(), 0.1); state.ticks++;
+
+    // Minigame Loop
+    if(state.minigameActive) {
+        state.mgCursorPos += 150 * dt * state.mgCursorDir;
+        if(state.mgCursorPos > 100) { state.mgCursorPos = 100; state.mgCursorDir = -1; }
+        if(state.mgCursorPos < 0) { state.mgCursorPos = 0; state.mgCursorDir = 1; }
+        const mgC = document.getElementById('mgCursor'); if(mgC) mgC.style.left = state.mgCursorPos + '%';
+    }
+
+    if(!state.paused && !state.minigameActive) {
+        let isInputting = false;
+        let tMoveX = 0, tMoveZ = 0;
+
+        if(window.isMobile) {
+            tMoveX = window.mobileMoveX || 0; tMoveZ = -(window.mobileMoveZ || 0);
+            if(Math.abs(tMoveX) > 0.1 || Math.abs(tMoveZ) > 0.1) isInputting = true;
+        } else {
+            if(keys['KeyW']) { tMoveZ += 1; } if(keys['KeyS']) { tMoveZ -= 1; } 
+            if(keys['KeyA']) { tMoveX -= 1; } if(keys['KeyD']) { tMoveX += 1; }
+            if(tMoveX !== 0 || tMoveZ !== 0) isInputting = true;
+        }
+
+        const targetSpeed = isInputting ? (keys['ShiftLeft'] ? 10.0 : 6.0) : 0; 
+        currentSpeed += (targetSpeed - currentSpeed) * 10 * dt; 
+        
+        fw.set(0,0,-1).applyAxisAngle(upAxis, yaw); rt.set(1,0,0).applyAxisAngle(upAxis, yaw);
+
+        if(currentSpeed > 0.1) {
+            const mag = Math.sqrt(tMoveX*tMoveX + tMoveZ*tMoveZ) || 1; 
+            const dx = (tMoveX * rt.x + tMoveZ * fw.x) / mag * currentSpeed * dt; 
+            const dz = (tMoveX * rt.z + tMoveZ * fw.z) / mag * currentSpeed * dt;
+            
+            nextXPos.set(camera.position.x + dx, camera.position.y, camera.position.z); if(!checkCollision(nextXPos, 0.2)) camera.position.x += dx;
+            nextZPos.set(camera.position.x, camera.position.y, camera.position.z + dz); if(!checkCollision(nextZPos, 0.2)) camera.position.z += dz;
+            if(state.ticks % (keys['ShiftLeft'] ? 15 : 25) === 0 && isGrounded) playSound('step');
+        }
+
+        let groundH = Math.sin(camera.position.x*0.2)*0.3 + Math.cos(camera.position.z*0.2)*0.3;
+        if(camera.position.x >= -8 && camera.position.x <= 8 && camera.position.z >= -8 && camera.position.z <= 8) groundH = 0; 
+        
+        let targetBaseY = 1.6 + groundH + (currentSpeed > 0.1 && isGrounded ? Math.sin(state.ticks * 0.2) * 0.08 : 0);
+        
+        if(keys['Space'] && isGrounded) { velocityY = 8.0; isGrounded = false; playSound('step'); keys['Space'] = false; }
+        
+        if(!isGrounded) {
+            velocityY -= 25.0 * dt; camera.position.y += velocityY * dt;
+            if(camera.position.y <= targetBaseY) { camera.position.y = targetBaseY; isGrounded = true; velocityY = 0; }
+        } else { camera.position.y = targetBaseY; }
+        
+        if(currentToolMesh) {
+            if(isSwinging) {
+                swingTween += dt * 18; if(swingTween >= Math.PI) { isSwinging = false; swingTween = 0; }
+                currentToolMesh.rotation.z = Math.sin(swingTween) * 1.8; 
+                currentToolMesh.position.y = -0.4 - Math.sin(swingTween) * 0.4;
+                currentToolMesh.position.z = -0.6 - Math.sin(swingTween) * 0.2; 
+            } else { currentToolMesh.rotation.z = 0; currentToolMesh.position.y = -0.4 + (currentSpeed > 0.1 && isGrounded ? Math.sin(state.ticks * 0.1) * 0.03 : 0); currentToolMesh.position.z = -0.6; }
+        }
+        
+        if(hudVisibilityTimer > 0) hudVisibilityTimer--;
+        
+        if(state.ticks % 10 === 0) { 
+            raycaster.setFromCamera(center, camera);
+            const hits = raycaster.intersectObjects(interactablesArray, true);
+            const cross = document.getElementById('cross');
+            const tooltip = document.getElementById('actionTooltip');
+            if(hits.length > 0 && hits[0].distance <= (state.toolTiers.net === 2 && state.tool === 4 ? 10 : 6)) {
+                if(cross) cross.classList.add('active');
+                let obj = hits[0].object; while(obj && obj.parent && !obj.userData.type) obj = obj.parent;
+                if(obj && obj.userData) {
+                    if(tooltip) tooltip.style.opacity = 1;
+                    if(obj.userData.type === 'pickup') { if(tooltip) tooltip.textContent = "Collect Relic"; if(!nFlags.seal) { setTimeout(()=>triggerNarrator("A Magic Seal! Time your tap in the blue zone to break it!"), 500); nFlags.seal=true; } }
+                    else if(obj.userData.type === 'trader') { if(tooltip) tooltip.textContent = "Trade with Fairy"; }
+                    else if(obj.userData.type === 'compostPit') { if(tooltip) tooltip.textContent = "Compost Trash"; }
+                    else if(obj.userData.type === 'barrel') { if(tooltip) tooltip.textContent = "Harvest Rainwater"; }
+                    else if(obj.userData.type === 'ready') { if(tooltip) tooltip.textContent = "Harvest Crop"; }
+                    else if(obj.userData.type === 'trash') { if(tooltip) tooltip.textContent = "Clean Stream"; }
+                    else if(obj.userData.type === 'water' && state.tool===7) { if(tooltip) tooltip.textContent = state.fishingState===2 ? "! PULL !" : "Cast Line"; }
+                    else if(obj.userData.type === 'bug' && state.tool===4) { if(tooltip) tooltip.textContent = "Catch Bug"; }
+                    else if(obj.userData.type === 'artifact' && state.tool===0) { if(tooltip) tooltip.textContent = "Dig Artifact"; }
+                    else if(obj.userData.type === 'soil' && state.tool===8 && !obj.userData.mulched) { if(tooltip) tooltip.textContent = "Apply Magic Moss"; }
+                    else { if(tooltip) tooltip.textContent = ""; }
+                    
+                    if(obj.userData.type !== 'water' && obj.userData.type !== 'grass' && obj.userData.type !== 'soil') wakeHUD();
+                }
+            } else { 
+                if(cross) cross.classList.remove('active'); 
+                if(tooltip) tooltip.style.opacity = 0; 
+            }
+        }
+        
+        const hudEl = document.getElementById('hud');
+        if(hudEl) {
+            if(hudVisibilityTimer <= 0) hudEl.classList.remove('show-hud');
+            else hudEl.classList.add('show-hud');
+        }
+
+        if(state.ticks % 30 === 0) updateChunks();
+
+        // Fishing Logic
+        if(state.fishingState === 1) {
+            state.fishingTimer--;
+            if(state.fishingTimer <= 0) { state.fishingState = 2; playSound('splash'); screenFlash("rgba(0, 229, 255, 0.4)"); }
+        } else if(state.fishingState === 2) {
+            state.fishingTimer--;
+            if(state.fishingTimer < -60) { state.fishingState = 0; window.showFloatingText("Fish got away...", camera.position.x, camera.position.y, camera.position.z-2, "#f48fb1"); }
+        }
+    }
+
+    state.timeOfDay += 0.0003; const time = state.timeOfDay % (Math.PI * 2); const sunHeight = Math.cos(time);
+    sunLight.position.x = Math.sin(time) * 50; sunLight.position.y = sunHeight * 50; sunLight.position.z = Math.cos(time) * 20;
+
+    let skyColor = new THREE.Color(), fogColor = new THREE.Color(); let displayTime = "Day", displayWeather = "✨ Magic Flow";
+    if(sunHeight > 0.2) { skyColor.set(0x8e24aa); fogColor.set(0x512da8); sunLight.intensity = 2.0; hemiLight.intensity = 0.8; displayTime = "☀️ Midday"; } 
+    else if(sunHeight > -0.2) { skyColor.set(0xe91e63); fogColor.set(0xc2185b); sunLight.intensity = Math.max(0, sunHeight) * 4; hemiLight.intensity = 0.5; displayTime = sunLight.position.x > 0 ? "🌅 Pink Dusk" : "🌄 Violet Dawn"; } 
+    else { skyColor.set(0x1a237e); fogColor.set(0x000000); sunLight.intensity = 0; hemiLight.intensity = 0.2; displayTime = "🌙 Starfall"; }
+    
+    scene.background.lerp(skyColor, 0.05); scene.fog.color.lerp(fogColor, 0.05); 
+    const timeEl = document.getElementById('timeDisplay'); const weatherEl = document.getElementById('weatherDisplay');
+    if (timeEl) timeEl.textContent = displayTime; if (weatherEl) weatherEl.textContent = displayWeather;
+    
+    magicWaterMap.offset.x += 0.002; magicWaterMap.offset.y += 0.002;
+
+    activeWater.forEach(c => c.position.y = 0.1 + Math.sin(state.ticks * 0.05 + c.userData.offset) * 0.04);
+    activeFloaters.forEach(c => c.position.y += Math.sin(state.ticks * 0.02 + c.userData.offset) * 0.01);
+    activeWindmills.forEach(w => w.mesh.rotation.z += w.speed);
+    
+    if(displayTime === "🌙 Starfall" && state.ticks % 10 === 0) {
+        activeBarrels.forEach(b => {
+            let bData = b.userData;
+            if(bData && bData.water < 100) {
+                bData.water = Math.min(100, bData.water + 0.5);
+                if(bData.waterMesh) { bData.waterMesh.scale.y = Math.max(0.1, bData.water/100); bData.waterMesh.position.y = 0.05 + (bData.water/100)*0.45; }
+            }
+        });
+    }
+
+    activeTrash.forEach(t => {
+        t.position.z += t.userData.speed; t.position.y = 0.4 + Math.sin(state.ticks * 0.1 + t.position.z) * 0.1; t.rotation.x += 0.02; t.rotation.y += 0.02;
+        if(t.position.z > camera.position.z + 20) { t.parent.remove(t); activeInteractables.delete(t); updateInteractables(); activeTrash.delete(t); }
+    });
+
+    activeBugs.forEach(b => {
+        b.position.x += Math.sin(state.ticks*0.05 + b.userData.offset)*0.05; b.position.y = b.userData.baseY + Math.sin(state.ticks*0.1 + b.userData.offset)*0.5;
+    });
+
+    activeNPCs.forEach(npc => {
+        if(npc.userData.wait > 0) npc.userData.wait--;
+        else {
+            const ndx = Math.sin(npc.userData.dir) * npc.userData.speed; const ndz = Math.cos(npc.userData.dir) * npc.userData.speed;
+            npc.position.x += ndx; npc.position.z += ndz;
+            if(Math.random() < 0.01) { if(Math.random() < 0.3) npc.userData.wait = 30 + Math.random() * 60; else npc.userData.dir += (Math.random() - 0.5) * Math.PI; }
+            npc.rotation.y = npc.userData.dir;
+            
+            const hover = Math.sin(state.ticks * 0.1) * 0.1;
+            npc.children[0].position.y = 0.4 + hover; npc.children[1].position.y = 0.95 + hover;
+            if(npc.userData.lw && npc.userData.rw) {
+                npc.userData.lw.rotation.y = -Math.PI/4 + Math.sin(state.ticks * 0.8) * 0.5;
+                npc.userData.rw.rotation.y = Math.PI/4 - Math.sin(state.ticks * 0.8) * 0.5;
+                npc.userData.lw.position.y = 0.4 + hover; npc.userData.rw.position.y = 0.4 + hover;
+            }
+        }
+    });
+
+    activeCrops.forEach(c => {
+        if(c.drip && !c.watered && state.waterSupply > 0) { 
+            let dCost = c.mulched ? 0.005 : 0.01; c.watered = true; state.waterSupply = Math.max(0, state.waterSupply - dCost); window.updateUI(); 
+        }
+        if(c.watered && c.growth < 1) {
+            const cType = SEED_TYPES[c.cropType || 0];
+            c.growth += c.fertilized ? cType.growTime * 3 : cType.growTime; 
+            const s = 0.5 + (c.growth * 2.0); c.cropMesh.scale.set(s, s, s);
+            c.cropMesh.position.y = c.yOffset + Math.abs(Math.sin(state.ticks * 0.1 + c.yOffset)) * 0.05 * (1-c.growth);
+            if(c.growth >= 1) {
+                c.type = 'ready'; c.cropMesh.position.y = c.yOffset;
+                let fMat = mats.cropStar; let fGeo = geos.flower;
+                if(c.cropType === 1) { fMat = mats.cropLunar; fGeo = geos.melon; }
+                else if(c.cropType === 2) { fMat = mats.cropSolar; fGeo = geos.pumpkin; }
+                const fruit = new THREE.Mesh(fGeo, fMat); fruit.position.y = 0.5; fruit.castShadow = true; c.cropMesh.add(fruit);
+                saveTileState({userData: c}); playSound('success');
+            }
+        }
+        if(c.type === 'ready' && c.cropMesh.children.length > 1) { 
+            const fruit = c.cropMesh.children[c.cropMesh.children.length-1];
+            if(fruit) { fruit.scale.setScalar(1.0 + Math.sin(state.ticks * 0.1) * 0.15); }
+        }
+    });
+
+    renderer.render(scene, camera);
+}
+
+window.updateChunks = updateChunks;
+window.updateChunks(); 
+window.updateUI(); 
+animate();
+window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+</script>
+</body>
+</html>

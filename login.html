@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Save Every Drop - Premium Academy</title>
+    <style>
+        /* Premium, elegant, yet friendly fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Outfit:wght@500;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100dvh; 
+            overflow-x: hidden;
+            overflow-y: auto;
+            /* Premium Pastel Mesh Gradient */
+            background-color: #fdfbfb;
+            background-image: 
+                radial-gradient(at 0% 0%, #e0c3fc 0%, transparent 50%), 
+                radial-gradient(at 100% 0%, #8ec5fc 0%, transparent 50%), 
+                radial-gradient(at 100% 100%, #ffecd2 0%, transparent 50%), 
+                radial-gradient(at 0% 100%, #cfdef3 0%, transparent 50%);
+            background-attachment: fixed;
+            color: #334155; /* Slate 700 - Premium readable text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: clamp(1.5rem, 5vw, 4rem);
+            position: relative;
+        }
+
+        /* --- OPTIMIZED CANVAS BACKGROUND --- */
+        #magic-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- PREMIUM LAYOUT --- */
+        .layout-wrapper {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(2rem, 4vw, 3rem);
+            width: 100%;
+            max-width: 900px;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease;
+        }
+
+        @media (min-width: 850px) {
+            .layout-wrapper { flex-direction: row; align-items: stretch; }
+        }
+
+        /* --- ELEGANT GLASSMORPHISM --- */
+        .glass-panel {
+            /* Clean, highly transparent white for premium frosted glass */
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            /* Ultra-thin crisp borders */
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: clamp(24px, 4vw, 32px);
+            padding: clamp(2.5rem, 5vw, 3.5rem) clamp(2rem, 4vw, 3rem);
+            width: 100%;
+            max-width: 420px;
+            /* Very soft, diffuse premium shadow */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), 
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: smoothReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            position: relative;
+        }
+
+        .tips-panel { animation-delay: 0.1s; display: flex; flex-direction: column;}
+        .login-panel { animation-delay: 0.2s; }
+
+        @keyframes smoothReveal {
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* --- REFINED TYPOGRAPHY --- */
+        h1, h2 {
+            font-family: 'Outfit', sans-serif;
+            color: #1e293b; /* Slate 800 */
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+            font-weight: 800;
+        }
+        
+        h1 { font-size: clamp(2rem, 5vw, 2.4rem); }
+        h2 { 
+            font-size: clamp(1.5rem, 4vw, 1.8rem); 
+            margin-bottom: 1rem; 
+            /* Soft gradient text for the magic touch */
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-weight: 600;
+            margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+            color: #64748b; /* Slate 500 */
+        }
+
+        /* --- TACTILE, PREMIUM INPUTS --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: clamp(14px, 3vw, 16px) 20px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            color: #334155;
+            font-size: clamp(1rem, 2.5vw, 1.05rem);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .input-group input::placeholder { color: #94a3b8; font-weight: 500; }
+        .input-group input:focus {
+            background: #ffffff;
+            border-color: #a8a5f7;
+            box-shadow: 0 0 0 4px rgba(168, 165, 247, 0.15);
+        }
+
+        /* --- ELEGANT BUTTONS --- */
+        .btn {
+            width: 100%;
+            padding: clamp(15px, 3vw, 18px);
+            border: none;
+            border-radius: 16px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.1rem, 3vw, 1.2rem);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            margin-bottom: 1rem;
+            color: white;
+            user-select: none;
+        }
+
+        .btn-primary {
+            /* Soft, premium pastel gradient */
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            box-shadow: 0 4px 15px rgba(161, 140, 209, 0.3);
+        }
+
+        .btn-google {
+            background: #ffffff;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        @media (hover: hover) {
+            .btn-primary:hover { 
+                transform: translateY(-2px); 
+                box-shadow: 0 8px 20px rgba(161, 140, 209, 0.4);
+            }
+            .btn-google:hover { 
+                background: #f8fafc;
+                transform: translateY(-2px); 
+                box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+            }
+        }
+
+        .btn:active {
+            transform: translateY(1px) !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+        }
+
+        .btn-google svg { width: clamp(22px, 5vw, 24px); height: clamp(22px, 5vw, 24px); }
+
+        /* --- REFINED MAGIC STAFF --- */
+        .wand-container {
+            position: absolute;
+            top: -65px;
+            right: -25px;
+            width: 130px;
+            height: 130px;
+            z-index: 20;
+            transform-origin: 30% 70%; 
+            animation: gentleFloat 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes gentleFloat {
+            from { transform: translateY(0) rotate(3deg); }
+            to { transform: translateY(-10px) rotate(-3deg); }
+        }
+
+        .wand-container.casting {
+            animation: elegantCast 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+        }
+
+        @keyframes elegantCast {
+            0% { transform: rotate(3deg) scale(1); }
+            20% { transform: rotate(25deg) translateY(-5px) scale(1.05); }
+            50% { transform: rotate(-30deg) translateY(10px) scale(1.1); }
+            70% { transform: rotate(-10deg) translateY(2px) scale(1.05); }
+            100% { transform: rotate(3deg) scale(1); }
+        }
+
+        /* --- ELEGANT TIPS TEXT --- */
+        .tips-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-grow: 1;
+            min-height: 150px;
+            position: relative;
+        }
+
+        .tip-text {
+            font-size: clamp(1.1rem, 3vw, 1.25rem);
+            font-weight: 600;
+            color: #475569; 
+            line-height: 1.6;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tip-text.fade-out {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        /* --- PERFORMANT DOM SPARKS --- */
+        .spell-spark {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 30;
+            /* No box-shadows, pure flat colors for performance */
+            animation: sparkFly 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes sparkFly {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        /* --- PREMIUM STATUS MESSAGES --- */
+        #error-msg, #success-msg {
+            font-weight: 700;
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            margin-bottom: 1.2rem; 
+            display: none; 
+            font-size: clamp(0.9rem, 2.5vw, 0.95rem);
+            animation: smoothPop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        @keyframes smoothPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #error-msg { 
+            background: #fef2f2; 
+            color: #ef4444; 
+            border: 1px solid #fecaca;
+        }
+        #success-msg { 
+            background: #f0fdf4; 
+            color: #10b981; 
+            border: 1px solid #a7f3d0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Performant Canvas Layer -->
+    <canvas id="magic-canvas"></canvas>
+
+    <div class="layout-wrapper">
+        
+        <!-- Premium Tips Panel -->
+        <div class="glass-panel tips-panel">
+            <!-- Refined Vector Magic Staff -->
+            <div class="wand-container" id="magic-wand">
+                <div id="wand-tip" style="position:absolute; top: 15px; right: 15px; width: 5px; height: 5px;"></div>
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Smooth Staff Body -->
+                    <path d="M25 85 L80 30" stroke="#d4a373" stroke-width="8" stroke-linecap="round"/>
+                    <path d="M25 85 L80 30" stroke="#faedcd" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                    
+                    <!-- Elegant Gold Bindings -->
+                    <path d="M40 70 L45 65 M55 55 L60 50 M70 40 L75 35" stroke="#fefae0" stroke-width="3" stroke-linecap="round"/>
+                    
+                    <!-- Premium Pastel Crystal -->
+                    <path d="M80 15 L90 25 L80 35 L70 25 Z" fill="#bde0fe" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M80 15 L85 25 L80 35 Z" fill="#a2d2ff"/>
+                    
+                    <!-- Tiny elegant stars -->
+                    <path d="M85 10 L87 14 L91 15 L88 18 L89 22 L85 20 L81 22 L82 18 L79 15 L83 14 Z" fill="#ffb703"/>
+                    <path d="M68 18 L69 20 L71 21 L69 22 L70 24 L68 23 L66 24 L67 22 L65 21 L67 20 Z" fill="#ffb703"/>
+                </svg>
+            </div>
+            
+            <h2>Wisdom Well</h2>
+            <div class="tips-content">
+                <p class="tip-text" id="tip-text">Turn off the tap while brushing your teeth to save up to 8 gallons of water! 💧✨</p>
+            </div>
+        </div>
+
+        <!-- Premium Login Card -->
+        <div class="glass-panel login-panel">
+            <h1>Water Academy</h1>
+            <p class="subtitle">Enter the magical oasis</p>
+            
+            <p id="error-msg"></p>
+            <p id="success-msg"></p>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Apprentice Email" required autocomplete="email">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Secret Password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary">Dive In</button>
+            </form>
+            
+            <button id="google-login" class="btn btn-google">
+                <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+                Continue with Google
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Transport Animation -->
+    <div id="transport" style="position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: radial-gradient(circle at center, #4fc3f7 0%, #74c364 50%, #1a3a14 100%); z-index: 100; opacity: 0; transition: opacity 1s ease; color: #fff; font-size: 2rem; font-weight: 900; text-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        🌟 Transporting to Farm World... 🌟
+    </div>
+
+    <!-- Firebase SDK (V9 Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } 
+        from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPV-huyML7md5t3aZzf8jytmbrVJYuyfM",
+            authDomain: "water-conservation-game-23918.firebaseapp.com",
+            projectId: "water-conservation-game-23918",
+            storageBucket: "water-conservation-game-23918.firebasestorage.app",
+            messagingSenderId: "798930154275",
+            appId: "1:798930154275:web:272042db00af1f2e2c1296",
+            measurementId: "G-4YP7D0FEEC"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const errorMsg = document.getElementById('error-msg');
+        const successMsg = document.getElementById('success-msg');
+
+        async function verifyWithJavaBackend(user) {
+            // For now, skip backend verification and directly transport
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            // Show transport animation
+            const transport = document.getElementById('transport');
+            transport.style.display = 'flex';
+            setTimeout(() => transport.style.opacity = '1', 100);
+            
+            // Fade out layout
+            document.querySelector('.layout-wrapper').style.opacity = '0';
+            
+            // Redirect immediately
+            window.location.href = 'fam water conservation game.html';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.activeElement.blur(); 
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                await verifyWithJavaBackend(userCredential.user);
+            } catch (error) {
+                successMsg.style.display = 'none';
+                errorMsg.style.display = 'block';
+                if(error.code === 'auth/invalid-credential') {
+                    errorMsg.innerText = "Incorrect email or password. Please try again.";
+                } else {
+                    errorMsg.innerText = error.message;
+                }
+            }
+        });
+
+        document.getElementById('google-login').addEventListener('click', async () => {
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            try {
+                const result = await signInWithPopup(auth, provider);
+                await verifyWithJavaBackend(result.user);
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = "Google sign-in failed. " + error.message;
+            }
+        });
+    </script>
+
+    <!-- Optimized Interactions -->
+    <script>
+        // --- 1. Elegant Staff & Tips Logic ---
+        const tips = [
+            "Turn off the tap while brushing your teeth to save up to 8 gallons of water! 💧",
+            "Collect rainwater in a barrel for your magical herb garden! 🌿",
+            "Fix leaky cauldrons! A drop a second wastes 3,000 gallons a year. 🔧",
+            "Shorter showers are better! A 5-minute shower saves tons of water! 🚿",
+            "Only run the magical dishwasher when it's totally full! 🍽️",
+            "Use a broom, not a water hose, to clean outside! 🧹"
+        ];
+        
+        let currentTipIndex = 0;
+        const tipElement = document.getElementById('tip-text');
+        const magicWand = document.getElementById('magic-wand');
+        const wandTipAnchor = document.getElementById('wand-tip');
+
+        // Pastel hex colors for performance sparks (No CSS shadow blurs)
+        const sparkColors = ['#bde0fe', '#ffc8dd', '#fcf6bd', '#caffbf'];
+
+        function createCleanBurst() {
+            const rect = wandTipAnchor.getBoundingClientRect();
+            
+            // Generate 8 lightweight DOM nodes
+            for(let i=0; i<8; i++) {
+                const spark = document.createElement('div');
+                spark.classList.add('spell-spark');
+                spark.style.backgroundColor = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+                
+                spark.style.left = `${rect.left + window.scrollX}px`;
+                spark.style.top = `${rect.top + window.scrollY}px`;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 40 + Math.random() * 60;
+                
+                spark.style.setProperty('--tx', `${Math.cos(angle) * velocity}px`);
+                spark.style.setProperty('--ty', `${Math.sin(angle) * velocity + 20}px`);
+                
+                document.body.appendChild(spark);
+                
+                setTimeout(() => { if(spark.parentNode) spark.remove(); }, 800);
+            }
+        }
+
+        setInterval(() => {
+            magicWand.classList.add('casting');
+            tipElement.classList.add('fade-out');
+
+            setTimeout(() => {
+                createCleanBurst();
+                
+                currentTipIndex = (currentTipIndex + 1) % tips.length;
+                tipElement.innerText = tips[currentTipIndex];
+                tipElement.classList.remove('fade-out');
+            }, 400); 
+
+            setTimeout(() => {
+                magicWand.classList.remove('casting');
+            }, 1000); 
+
+        }, 8000); 
+
+
+        // --- 2. High-Performance, Shadow-Free Canvas Particles ---
+        const canvas = document.getElementById('magic-canvas');
+        const ctx = canvas.getContext('2d', { alpha: true }); // Optimized context
+        
+        let width, height;
+        let particles = [];
+        
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Bubble {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 3 + 1;
+                this.speedY = Math.random() * -0.5 - 0.2; // Very slow upwards float
+                this.speedX = (Math.random() - 0.5) * 0.2;
+                // Pure white with random low opacity - very cheap to render
+                this.opacity = Math.random() * 0.4 + 0.1; 
+            }
+
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                
+                // Reset smoothly
+                if (this.y < -10) {
+                    this.y = height + 10;
+                    this.x = Math.random() * width;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Keep count low for premium subtle effect + high performance
+        const particleCount = window.innerWidth <= 768 ? 30 : 60;
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Bubble());
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+            requestAnimationFrame(animateCanvas);
+        }
+
+        animateCanvas();
+    </script>
+</body>
+</html>
