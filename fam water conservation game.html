@@ -119,8 +119,8 @@
         #mobileControls { display: block; }
         #hud { display: none; } /* Hide desktop HUD on mobile */
     }
-    .joystick-zone { position: absolute; bottom: 120px; left: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: auto; }
-    .joystick-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: rgba(255,255,255,0.6); border-radius: 50%; }
+    .joystick-zone { position: absolute; bottom: 120px; left: 20px; width: 140px; height: 140px; background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: auto; }
+    .joystick-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.6); border-radius: 50%; }
     .touch-look-zone { position: absolute; inset: 0; pointer-events: auto; }
     .action-btn { position: absolute; bottom: 120px; right: 20px; width: 70px; height: 70px; background: rgba(244, 143, 177, 0.6); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 24px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     .action-btn:active { background: rgba(244, 143, 177, 0.9); transform: scale(0.95); }
@@ -283,14 +283,21 @@
     function updateOrientation() {
         const isLandscape = window.innerWidth > window.innerHeight;
         const message = document.getElementById('orientation-message');
-        const gameElements = document.querySelectorAll('canvas, #hud, #cross, #mobileControls');
+        const gameElements = document.querySelectorAll('canvas, #hud, #cross');
+        const mobileControls = document.getElementById('mobileControls');
         
         if (isLandscape) {
             message.style.display = 'none';
             gameElements.forEach(el => el.style.display = '');
+            if (window.hasTouch) mobileControls.style.display = 'block';
         } else {
             message.style.display = 'flex';
             gameElements.forEach(el => el.style.display = 'none');
+            // Show mobile controls even in portrait for touch devices
+            if (window.hasTouch) {
+                mobileControls.style.display = 'block';
+                message.style.display = 'none'; // Hide message to allow play
+            }
         }
     }
     
@@ -341,7 +348,7 @@
                 const touchY = e.touches[0].clientY;
                 const dx = touchX - joystickCenterX;
                 const dy = touchY - joystickCenterY;
-                const maxDist = 40;
+                const maxDist = 50;
                 const dist = Math.min(maxDist, Math.sqrt(dx*dx + dy*dy));
                 const angle = Math.atan2(dy, dx);
                 const knobX = Math.cos(angle) * dist;
