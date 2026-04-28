@@ -85,7 +85,18 @@
     #hotbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: none; padding: 10px; border-radius: 25px; background: rgba(255,255,255,0.5); border: 2px solid #fff; max-width: 95vw; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .slot { width: clamp(45px, 12vw, 60px); height: clamp(45px, 12vw, 60px); flex-shrink: 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: clamp(20px, 5vw, 28px); background: rgba(255,255,255,0.95); border: 3px solid transparent; color: #333; transition: 0.2s; cursor: pointer; position: relative; box-shadow: 0 4px 10px rgba(31, 38, 135, 0.15); text-shadow: none; }
     .slot span { font-size: clamp(8px, 2vw, 10px); font-weight: 900; color: #7e57c2; margin-top: -2px; font-family: 'Fredoka One'; }
-    .slot.active { border-color: #f48fb1; background: #fff; transform: translateY(-8px) scale(1.1); box-shadow: 0 10px 15px rgba(244, 143, 177, 0.5), 0 0 15px rgba(255, 255, 255, 1); }
+    .slot.active { 
+        border-color: #f48fb1; 
+        background: #fff; 
+        transform: translateY(-8px) scale(1.1); 
+        box-shadow: 0 10px 15px rgba(244, 143, 177, 0.5), 0 0 20px rgba(244, 143, 177, 0.8), 0 0 40px rgba(244, 143, 177, 0.4); 
+        filter: drop-shadow(0 0 10px rgba(244, 143, 177, 0.6));
+        animation: glowPulse 2s ease-in-out infinite alternate;
+    }
+    @keyframes glowPulse {
+        0% { filter: drop-shadow(0 0 10px rgba(244, 143, 177, 0.6)); }
+        100% { filter: drop-shadow(0 0 20px rgba(244, 143, 177, 1)); }
+    }
     .slot.locked { opacity: 0.5; background: #e0e0e0; pointer-events: none; }
     .slot.locked::after { content: "🔒"; position: absolute; font-size: 20px; top: 50%; left: 50%; transform: translate(-50%, -50%); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     .slot .badge { position: absolute; top: -6px; right: -6px; background: #ab47bc; color: white; font-size: 10px; padding: 2px 5px; border-radius: 10px; font-family: 'Fredoka One'; box-shadow: 0 2px 5px rgba(0,0,0,0.2); border: 2px solid #fff; }
@@ -267,6 +278,25 @@
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => {});
     }
+    
+    // Dynamic orientation handling
+    function updateOrientation() {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const message = document.getElementById('orientation-message');
+        const gameElements = document.querySelectorAll('canvas, #hud, #cross, #mobileControls');
+        
+        if (isLandscape) {
+            message.style.display = 'none';
+            gameElements.forEach(el => el.style.display = '');
+        } else {
+            message.style.display = 'flex';
+            gameElements.forEach(el => el.style.display = 'none');
+        }
+    }
+    
+    updateOrientation();
+    window.addEventListener('orientationchange', updateOrientation);
+    window.addEventListener('resize', updateOrientation);
     
     if (window.hasTouch) {
         document.getElementById('mobileControls').style.display = 'block';
@@ -462,28 +492,35 @@ scene.fog = new THREE.FogExp2(0xf8bbd0, 0.025);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.05, 100); 
 camera.position.set(0, 1.6, 6); 
 
-const renderer = new THREE.WebGLRenderer({antialias: false, powerPreference: "high-performance"});
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true, 
+    powerPreference: "high-performance",
+    alpha: false,
+    stencil: false,
+    depth: true
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); 
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Higher quality for mobile
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
-renderer.toneMapping = THREE.ACESFilmicToneMapping; 
-renderer.toneMappingExposure = 1.1;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2; // Slightly brighter
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb39ddb, 0.7); 
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb39ddb, 0.6);
 scene.add(hemiLight);
 
-const sunLight = new THREE.DirectionalLight(0xfff59d, 2.0); 
+const sunLight = new THREE.DirectionalLight(0xfff59d, 3.0);
 sunLight.position.set(40, 50, 20);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 1024; 
-sunLight.shadow.mapSize.height = 1024;
+sunLight.shadow.mapSize.width = 2048; // Higher resolution for realism
+sunLight.shadow.mapSize.height = 2048;
 sunLight.shadow.camera.near = 0.5; sunLight.shadow.camera.far = 100;
 const dBox = 30;
 sunLight.shadow.camera.left = -dBox; sunLight.shadow.camera.right = dBox;
 sunLight.shadow.camera.top = dBox; sunLight.shadow.camera.bottom = -dBox;
-sunLight.shadow.bias = -0.001; 
+sunLight.shadow.bias = -0.0005;
 scene.add(sunLight);
 
 let hudVisibilityTimer = 0;
